@@ -6,24 +6,28 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title></title>
+        <title>BOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGOBOGO</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="stylesheet" href="css/normalize.min.css">
-        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 
-        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+        <script src="{{ url_for('static', filename='js/vendor/modernizr-2.8.3.min.js') }}"></script>
     </head>
     <body>
         <!--[if lt IE 8]>
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-        <p>Hello world! This is HTML5 Boilerplate.</p>
+        {% block body_content %}
+        <p>Most interesting, it seems that some unknown peculiarities are taking place at the server side.</p>
+        </br>
+        <b>body_content block not overridden</b>
+        {% endblock %}
 
-        <script src="js/plugins.js"></script>
-        <script src="js/main.js"></script>
+        <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <script>

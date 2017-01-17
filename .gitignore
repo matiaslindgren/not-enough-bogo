@@ -1,2 +1,5 @@
 *.sw[po]
 
+__pycache__
+*.pyc
+
