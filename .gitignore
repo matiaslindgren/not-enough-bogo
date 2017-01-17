@@ -2,3 +2,5 @@
 
 .lein*
 .nrepl-port
+
+target/*
