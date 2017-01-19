@@ -1,7 +1,7 @@
 import os.path
 import sqlite3
 import flask
-import tasks
+import src.tasks as tasks
 import math
 import random
 import ast
@@ -12,6 +12,7 @@ from celery.utils.log import get_task_logger
 
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 DATABASE_NAME = 'app.db'
+SCHEMA_NAME = "schema.sql"
 RANDOM_SEED = 42
 BACKUP_INTERVAL = 10**6
 SEQUENCE_MAX_LENGTH = 10
@@ -31,9 +32,8 @@ celery_logger = get_task_logger(__name__)
 celery_logger.setLevel(logging.DEBUG)
 
 
-
 APP_CONTEXT_DATABASE_NAME = "_" + DATABASE_NAME.replace(".", "_")
-DATABASE_SCHEMA = "schema.sql"
+DATABASE_SCHEMA = os.path.join(flask_app.root_path, SCHEMA_NAME)
 
 
 @flask_app.route("/")
