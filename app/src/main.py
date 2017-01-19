@@ -137,7 +137,7 @@ def store_iteration(bogo_id, messiness):
     db.commit()
 
 
-def _connect_db():
+def connect_db():
     connection = sqlite3.connect(flask_app.config['DATABASE'])
     connection.row_factory = sqlite3.Row
     return connection
@@ -153,11 +153,11 @@ def get_db():
     Return a connection to the app database.
     """
     if not hasattr(flask.g, APP_CONTEXT_DATABASE_NAME):
-        setattr(flask.g, APP_CONTEXT_DATABASE_NAME, _connect_db())
+        setattr(flask.g, APP_CONTEXT_DATABASE_NAME, connect_db())
     return getattr(flask.g, APP_CONTEXT_DATABASE_NAME)
 
 
-def _init_db():
+def init_db():
     db = get_db()
     with flask_app.open_resource(DATABASE_SCHEMA, mode='r') as schema:
         db.cursor().executescript(schema.read())
@@ -171,7 +171,7 @@ def initdb_command():
     """
     print("Initializing database, existing tables will be dropped.")
     if input("Are you sure? (Y)\n").lower() == "y":
-        _init_db()
+        init_db()
         print("Database initialized")
     else:
         print("Cancelled")
@@ -192,7 +192,7 @@ def backup_sorting_state(sequence):
     db.commit()
 
 
-def _get_previous_state_from_db():
+def get_previous_state_from_db():
     db = get_db()
     query = "select sequence, random_state from backups order by id desc"
     return db.execute(query).fetchone()
@@ -201,19 +201,19 @@ def _get_previous_state_from_db():
 @flask_app.cli.command('restart_from_backup')
 def restart_from_previous_known_state():
     raise NotImplementedError("restart from previous state not implemented")
-    row = _get_previous_state_from_db()
+    row = get_previous_state_from_db()
     sequence, random_module_state = tuple(map(ast.literal_eval, row))
     random.setstate(random_module_state)
     bogo(sequence)
 
 
-def _all_sequences(step, max_length):
+def all_sequences(step, max_length):
     seq_upper_limits = range(step + 1, max_length + step, step)
     return (list(range(1, n)) for n in seq_upper_limits)
 
 
 def bogo(sequence=None):
-    for seq in _all_sequences(SEQUENCE_STEP, SEQUENCE_MAX_LENGTH):
+    for seq in all_sequences(SEQUENCE_STEP, SEQUENCE_MAX_LENGTH):
         seq.reverse()
         result = sort_until_done.delay(seq)
         result.wait()
