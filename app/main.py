@@ -6,6 +6,8 @@ import math
 import random
 import ast
 import datetime
+import logging
+from celery.utils.log import get_task_logger
 
 
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'
@@ -20,6 +22,10 @@ flask_app.config.update(
     CELERY_RESULT_BACKEND=BROKER_URL
 )
 celery = tasks.make_celery(flask_app)
+
+celery_logger = get_task_logger(__name__)
+celery_logger.setLevel(logging.DEBUG)
+
 
 
 APP_CONTEXT_DATABASE_NAME = "_" + DATABASE_NAME.replace(".", "_")
