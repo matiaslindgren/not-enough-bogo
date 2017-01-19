@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
 
     def tearDown(self):
         os.close(self.db_file_desc)
-        os.unlink(main.flask.app.config['DATABASE'])
+        os.unlink(main.flask_app.config['DATABASE'])
 
 
 if __name__ == "__main__":
