@@ -19,7 +19,7 @@ def make_flask(name):
 
 def make_celery_logger(name):
     celery_logger = celery_log.get_task_logger(name)
-    celery_logger.setlevel(logging.debug)
+    celery_logger.setLevel(logging.DEBUG)
     return celery_logger
 
 
