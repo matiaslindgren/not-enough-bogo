@@ -4,11 +4,13 @@ Tests written using the property based testing library hypothesis.
 import unittest
 from hypothesis import strategies, given, settings, assume
 import os
+import ast
 import random
 import tempfile
 import datetime
 import dateutil.parser as date_parser
 import src.main as main
+import src.config as config
 
 
 settings.register_profile('dev', settings(max_examples=10))
@@ -67,31 +69,24 @@ class Test(unittest.TestCase):
             bogo_id = main.create_new_bogo(xs)
             db = main.get_db()
             fetch_query = "select * from bogos where id=?"
-            bogo_row = db.execute(fetch_query, (bogo_id, )).fetchone()
+            bogo = db.execute(fetch_query, (bogo_id, )).fetchone()
 
         self.assertEqual(
-            bogo_row['id'],
+            bogo['id'],
             bogo_id,
             "Mismatched id's after bogo insert"
         )
         self.assertEqual(
-            bogo_row['sequence_length'],
+            bogo['sequence_length'],
             len(xs),
             "Length of actual sequence differs from the length in the database."
         )
-        db_date = date_parser.parse(bogo_row['started'])
+        db_date = date_parser.parse(bogo['started'])
         time_delta = db_date - before_insert
-        self.assertEqual(
-            time_delta.days,
-            0,
-            "Inserting a bogo into the database should store the current time but the database contains {} while the time before insert was {}."
-            .format(bogo_row['started'], before_insert.isoformat())
-        )
         self.assertLess(
-            time_delta.seconds,
-            10,
-            "Inserting a bogo into the database should store the current time but timedelta seconds was greater than 10 at '{} seconds'."
-            .format(time_delta.days)
+            time_delta,
+            datetime.timedelta(seconds=10),
+            "Timedelta between the time at saving a new bogo and the time stored in the database was greater than 10 seconds."
         )
 
 
@@ -119,26 +114,26 @@ class Test(unittest.TestCase):
             main.close_bogo(bogo_id)
             db = main.get_db()
             fetch_query = "select * from bogos where id=?"
-            bogo_row = db.execute(fetch_query, (bogo_id, )).fetchone()
+            bogo = db.execute(fetch_query, (bogo_id, )).fetchone()
         after_close = datetime.datetime.utcnow()
 
         self.assertEqual(
-            bogo_row['id'],
+            bogo['id'],
             bogo_id,
             "Mismatched id's after bogo insert and close."
         )
         self.assertEqual(
-            bogo_row['sequence_length'],
+            bogo['sequence_length'],
             len(xs),
             "Closing a bogo should not change the sequence length."
         )
         self.assertIsNotNone(
-            bogo_row['finished'],
+            bogo['finished'],
             "Closing a bogo should update the finished field."
         )
 
-        db_started = date_parser.parse(bogo_row['started'])
-        db_finished = date_parser.parse(bogo_row['finished'])
+        db_started = date_parser.parse(bogo['started'])
+        db_finished = date_parser.parse(bogo['finished'])
 
         total_delta = after_close - before_insert
         db_delta = db_finished - db_started
