@@ -24,7 +24,7 @@ class Test(unittest.TestCase):
             )
 
     def test_normalized_messiness_notsorted(self):
-        for xs in (list(reversed(range(1, n))) for n in range(2, 100)):
+        for xs in (list(reversed(range(1, n))) for n in range(3, 100)):
             self.assertLess(
                 0,
                 main.normalized_messiness(xs),
