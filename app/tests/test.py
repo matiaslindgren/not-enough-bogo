@@ -142,8 +142,90 @@ class Test(unittest.TestCase):
             db_delta,
             total_delta,
             "After closing an inserted bogo, the timedelta between the start time {} and the finished time {} was greater than the timedelta before calling insert {} and the time after calling close {}."
-            .format(bogo_row['started'], bogo_row['finished'], before_insert.isoformat(), after_close.isoformat())
+            .format(bogo['started'], bogo['finished'], before_insert.isoformat(), after_close.isoformat())
         )
+
+
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
+    def test_store_iteration(self, xs):
+        with main.flask_app.app_context():
+            bogo_id = main.create_new_bogo(xs)
+            messiness = main.normalized_messiness(xs)
+            main.store_iteration(bogo_id, messiness)
+
+            db = main.get_db()
+            fetch_query = "select * from iterations where bogo=?"
+            iteration = db.execute(fetch_query, (bogo_id, )).fetchone()
+
+        self.assertEqual(
+            iteration['messiness'],
+            messiness,
+            "Iteration messiness inserted into the database was different from the messiness calculated before insertion."
+        )
+
+
+    def _backup_and_retrieve(self, xs):
+        with main.flask_app.app_context():
+            main.backup_sorting_state(xs)
+            return main.get_previous_state_from_db()
+
+
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
+    def test_backup_sorting_state_sequence_is_intact(self, xs):
+        backup = self._backup_and_retrieve(xs)
+        self.assertListEqual(
+            ast.literal_eval(backup['sequence']),
+            xs,
+            "The sequence stored as a backup was different when returned from the database."
+        )
+
+
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
+    def test_backup_sorting_state_date_is_sane(self, xs):
+        before_insert = datetime.datetime.utcnow()
+        backup = self._backup_and_retrieve(xs)
+        time_delta = date_parser.parse(backup['saved']) - before_insert
+        self.assertLess(
+            time_delta,
+            datetime.timedelta(seconds=10),
+            "Timedelta between the time at saving a backup and the time stored in the database was greater than 10 seconds."
+        )
+
+
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
+    def test_backup_sorting_state_when_random_not_altered(self, xs):
+        random.seed(config.RANDOM_SEED)
+        random_state_before = random.getstate()
+        backup = self._backup_and_retrieve(xs)
+        random_state_db = ast.literal_eval(backup['random_state'])
+        self.assertEqual(
+            random_state_before,
+            random_state_db,
+            "The random state returned by the database has is different even though the state of the random module was not changed."
+        )
+
+
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED,
+           state_change_count=strategies.integers(min_value=0, max_value=10000))
+    def test_backup_random_state_preserves_the_pseudorandom_sequence(self, xs, state_change_count):
+        random.seed(config.RANDOM_SEED)
+        for _ in range(state_change_count):
+            random.random()
+
+        backup = self._backup_and_retrieve(xs)
+        random_state_db = ast.literal_eval(backup['random_state'])
+
+        expected_random_sequence = [random.random() for _ in range(state_change_count)]
+        random.setstate(random_state_db)
+        from_db_random_sequence = (random.random() for _ in range(state_change_count))
+
+        for expected, from_db in zip(expected_random_sequence, from_db_random_sequence):
+            self.assertAlmostEqual(
+                from_db,
+                expected,
+                7,
+                "The sequence of pseudorandom floats was different when the state was reloaded from the db."
+            )
 
 
     def tearDown(self):
