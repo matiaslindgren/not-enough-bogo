@@ -30,8 +30,14 @@ def test1():
     res.wait()
 
 @flask_app.route("/")
-def main(name=None):
-    return flask.render_template('main.html', name=name)
+def main():
+    return flask.render_template('main.html')
+
+
+@flask_app.route("/current_speed.json")
+def get_current_iteration_speed():
+    print("get_current_iteration_speed at {}".format(get_iteration_speed()))
+    return flask.jsonify(current_speed=get_iteration_speed())
 
 
 @flask_app.route("/history")
