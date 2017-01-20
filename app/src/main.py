@@ -136,6 +136,9 @@ def get_db():
 
 
 def init_db():
+    """
+    Run the sql schema script on the database.
+    """
     db = get_db()
     with flask_app.open_resource(flask_app.config['DATABASE_SCHEMA'], mode='r') as schema:
         db.cursor().executescript(schema.read())
@@ -144,10 +147,7 @@ def init_db():
 
 @flask_app.cli.command('initdb')
 def initdb_command():
-    """
-    Run the sql schema script on the database.
-    """
-    print("Initializing database, existing tables will be dropped.")
+    print("Initializing database by executing: {}".format(flask_app.config['DATABASE_SCHEMA']))
     if input("Are you sure? (Y)\n").lower() == "y":
         init_db()
         print("Database initialized")
