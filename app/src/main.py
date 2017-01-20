@@ -1,39 +1,17 @@
-import os.path
-import sqlite3
 import flask
-import src.tasks as tasks
+import sqlite3
 import math
 import random
 import ast
 import datetime
-import logging
-from celery.utils.log import get_task_logger
+
+import src.config as config
+import src.util as util
 
 
-BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-DATABASE_NAME = 'app.db'
-SCHEMA_NAME = "schema.sql"
-RANDOM_SEED = 42
-BACKUP_INTERVAL = 10**6
-SEQUENCE_MAX_LENGTH = 10
-SEQUENCE_STEP = 10
+random.seed(config.RANDOM_SEED)
 
-random.seed(RANDOM_SEED)
-
-flask_app = flask.Flask(__name__)
-flask_app.config.update(
-    DATABASE=os.path.join(flask_app.root_path, DATABASE_NAME),
-    CELERY_BROKER_URL=BROKER_URL,
-    CELERY_RESULT_BACKEND=BROKER_URL
-)
-celery = tasks.make_celery(flask_app)
-
-celery_logger = get_task_logger(__name__)
-celery_logger.setLevel(logging.DEBUG)
-
-
-APP_CONTEXT_DATABASE_NAME = "_" + DATABASE_NAME.replace(".", "_")
-DATABASE_SCHEMA = os.path.join(flask_app.root_path, SCHEMA_NAME)
+flask_app, celery_app, celery_logger = util.make_app(__name__)
 
 
 @flask_app.route("/")
@@ -60,7 +38,7 @@ def normalized_messiness(seq):
 
 
 # TODO track iteration speed in some 'rationally global' variable
-@celery.task
+@celery_app.task
 def sort_until_done(integers):
     """
     Bogosort integers until it is sorted.
@@ -79,7 +57,7 @@ def sort_until_done(integers):
         random.shuffle(integers)
         messiness = normalized_messiness(integers)
         store_iteration(this_bogo_id, messiness)
-        if i >= BACKUP_INTERVAL:
+        if i >= config.BACKUP_INTERVAL:
             backup_sorting_state(integers)
             i = 0
         i += 1
@@ -144,22 +122,22 @@ def connect_db():
 
 @flask_app.teardown_appcontext
 def _close_db(error):
-    if hasattr(flask.g, APP_CONTEXT_DATABASE_NAME):
-        getattr(flask.g, APP_CONTEXT_DATABASE_NAME).close()
+    if hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
+        getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME).close()
 
 
 def get_db():
     """
     Return a connection to the app database.
     """
-    if not hasattr(flask.g, APP_CONTEXT_DATABASE_NAME):
-        setattr(flask.g, APP_CONTEXT_DATABASE_NAME, connect_db())
-    return getattr(flask.g, APP_CONTEXT_DATABASE_NAME)
+    if not hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
+        setattr(flask.g, config.APP_CONTEXT_DATABASE_NAME, connect_db())
+    return getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME)
 
 
 def init_db():
     db = get_db()
-    with flask_app.open_resource(DATABASE_SCHEMA, mode='r') as schema:
+    with flask_app.open_resource(flask_app.config['DATABASE_SCHEMA'], mode='r') as schema:
         db.cursor().executescript(schema.read())
     db.commit()
 
@@ -213,7 +191,7 @@ def all_sequences(step, max_length):
 
 
 def bogo(sequence=None):
-    for seq in all_sequences(SEQUENCE_STEP, SEQUENCE_MAX_LENGTH):
+    for seq in all_sequences(config.SEQUENCE_STEP, config.SEQUENCE_MAX_LENGTH):
         seq.reverse()
         result = sort_until_done.delay(seq)
         result.wait()

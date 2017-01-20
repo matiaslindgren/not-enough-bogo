@@ -1,0 +1,12 @@
+
+BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+DATABASE_NAME = 'app.db'
+SCHEMA_NAME = "schema.sql"
+RANDOM_SEED = 42
+BACKUP_INTERVAL = 10**6
+SEQUENCE_MAX_LENGTH = 10
+SEQUENCE_STEP = 10
+
+APP_CONTEXT_DATABASE_NAME = "_" + DATABASE_NAME.replace(".", "_")
+
+
