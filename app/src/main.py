@@ -120,6 +120,7 @@ def connect_db():
     connection.row_factory = sqlite3.Row
     return connection
 
+
 @flask_app.teardown_appcontext
 def _close_db(error):
     if hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
@@ -158,16 +159,18 @@ def initdb_command():
 def backup_sorting_state(sequence):
     """
     Write sequence, the state of the random module and the date into the database.
+    Returns the id of the inserted backup row.
     """
     db = get_db()
     query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
     backup_data = (
         repr(sequence),
         repr(random.getstate()),
-        datetime.date.today().isoformat()
+        datetime.datetime.utcnow().isoformat()
     )
-    db.execute(query, backup_data)
+    cursor = db.execute(query, backup_data)
     db.commit()
+    return cursor.lastrowid
 
 
 def get_previous_state_from_db():
