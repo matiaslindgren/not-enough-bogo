@@ -117,16 +117,6 @@ class Test(unittest.TestCase):
             bogo = db.execute(fetch_query, (bogo_id, )).fetchone()
         after_close = datetime.datetime.utcnow()
 
-        self.assertEqual(
-            bogo['id'],
-            bogo_id,
-            "Mismatched id's after bogo insert and close."
-        )
-        self.assertEqual(
-            bogo['sequence_length'],
-            len(xs),
-            "Closing a bogo should not change the sequence length."
-        )
         self.assertIsNotNone(
             bogo['finished'],
             "Closing a bogo should update the finished field."
