@@ -107,7 +107,7 @@ class Test(unittest.TestCase):
 
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_close_not_closed_bogo(self, xs):
+    def test_close_open_bogo(self, xs):
         before_insert = datetime.datetime.utcnow()
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
