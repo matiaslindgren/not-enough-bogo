@@ -4,6 +4,7 @@ import math
 import random
 import ast
 import datetime
+import time
 
 import src.config as config
 import src.util as util
@@ -13,6 +14,20 @@ random.seed(config.RANDOM_SEED)
 
 flask_app, celery_app, celery_logger = util.make_app(__name__)
 
+
+iteration_speed = 0.0
+def update_iteration_speed(iter_per_second):
+    global iteration_speed
+    iteration_speed = iter_per_second
+
+def get_iteration_speed():
+    return iteration_speed
+
+
+@flask_app.cli.command("test1")
+def test1():
+    res = sort_until_done.delay(list(reversed(range(1, 101))))
+    res.wait()
 
 @flask_app.route("/")
 def main(name=None):
@@ -45,22 +60,33 @@ def sort_until_done(integers):
     Writes iterations to the database.
     Writes backups of the sorting state at BACKUP_INTERVAL iterations.
     """
-    this_bogo_id = create_new_bogo(integers[:])
+    this_bogo_id = create_new_bogo(integers)
 
     celery_logger.info('Sorting {} integers with bogo id {}.'.format(len(integers), this_bogo_id))
 
     i = 0
     messiness = normalized_messiness(integers)
-    store_iteration(this_bogo_id, messiness)
+    # store_iteration(this_bogo_id, messiness)
 
+    mesmin = messiness
+    mesminlst = integers[:]
+    _integers = integers[:]
     while messiness > 0:
-        random.shuffle(integers)
-        messiness = normalized_messiness(integers)
-        store_iteration(this_bogo_id, messiness)
+        begin_time = time.perf_counter()
+        random.shuffle(_integers)
+        messiness = normalized_messiness(_integers)
+        if messiness < mesmin:
+            mesmin = messiness
+            mesminlst=  _integers[:]
+        # store_iteration(this_bogo_id, messiness)
         if i >= config.BACKUP_INTERVAL:
-            backup_sorting_state(integers)
+            backup_sorting_state(_integers)
+            celery_logger.info('\nbest so far {}'.format(mesmin))
+            celery_logger.info('{}'.format(mesminlst))
             i = 0
         i += 1
+        iteration_time = time.perf_counter() - begin_time
+        update_iteration_speed(1.0/iteration_time)
 
     close_bogo(this_bogo_id)
 
