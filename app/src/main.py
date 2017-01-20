@@ -76,7 +76,7 @@ def create_new_bogo(sequence):
     query = "insert into bogos (sequence_length, started) values (?, ?)"
     data = (
         len(sequence),
-        datetime.date.today().isoformat()
+        datetime.datetime.utcnow().isoformat()
     )
     cursor = db.execute(query, data)
     db.commit()
@@ -99,7 +99,7 @@ def close_bogo(bogo_id):
         raise RuntimeError("Attempted to close a bogo with id {} but it already had an end date {}.".format(bogo_id, bogo['finished']))
 
     query = "update bogos set finished=? where id=?"
-    data = (datetime.date.today().isoformat(), bogo_id)
+    data = (datetime.datetime.utcnow().isoformat(), bogo_id)
 
     db.execute(query, data)
     db.commit()
