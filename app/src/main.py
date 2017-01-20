@@ -175,7 +175,7 @@ def backup_sorting_state(sequence):
 
 def get_previous_state_from_db():
     db = get_db()
-    query = "select sequence, random_state from backups order by id desc"
+    query = "select * from backups order by id desc"
     return db.execute(query).fetchone()
 
 
