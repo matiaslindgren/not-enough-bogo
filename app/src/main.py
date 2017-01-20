@@ -59,6 +59,8 @@ def normalized_messiness(seq):
 
 
 # TODO track iteration speed in some 'rationally global' variable
+# TODO break up this to something more sane:
+#  - create the state backup before calling this task and pass its id
 @celery_app.task
 def sort_until_done(integers):
     """
