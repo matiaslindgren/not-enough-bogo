@@ -1,5 +1,7 @@
 language: python
 python:
   - "3.5"
+env:
+  - HYPOTHESIS_PROFILE=ci
 install: "pip install -r requirements.txt"
-script: "python3 -m unittest discover -s app"
+script: "python3 -m unittest discover -s app -v"
