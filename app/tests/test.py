@@ -18,10 +18,6 @@ settings.register_profile('ci', settings(max_examples=1000))
 settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', default='dev'))
 
 
-def is_sorted(xs):
-    return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
-
-
 class Test(unittest.TestCase):
 
     RANGE_FROM_ONE = strategies.builds(
@@ -39,6 +35,10 @@ class Test(unittest.TestCase):
         with main.flask_app.app_context():
             main.init_db()
 
+        # Ensure 2 different test cases never use a shared state of
+        # the global random module
+        self.random = random.Random()
+
 
     @given(xs=LIST_RANGE_INTEGERS_SORTED)
     def test_normalized_messiness_sorted(self, xs):
@@ -52,8 +52,9 @@ class Test(unittest.TestCase):
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_normalized_messiness_notsorted(self, xs):
-        random.shuffle(xs)
-        assume(not is_sorted(xs))
+        self.random.shuffle(xs)
+        is_sorted = all(xs[i-1] < xs[i] for i in range(1, len(xs)))
+        assume(not is_sorted)
         with main.flask_app.app_context():
             self.assertLess(
                 0,
@@ -156,8 +157,8 @@ class Test(unittest.TestCase):
 
     def _backup_and_retrieve(self, xs):
         with main.flask_app.app_context():
-            main.backup_sorting_state(xs)
-            return main.get_previous_state_from_db()
+            main.backup_sorting_state(xs, self.random)
+            return main.get_previous_state_all()
 
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
@@ -184,8 +185,8 @@ class Test(unittest.TestCase):
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_backup_sorting_state_when_random_not_altered(self, xs):
-        random.seed(config.RANDOM_SEED)
-        random_state_before = random.getstate()
+        self.random.seed(config.RANDOM_SEED)
+        random_state_before = self.random.getstate()
         backup = self._backup_and_retrieve(xs)
         random_state_db = ast.literal_eval(backup['random_state'])
         self.assertEqual(
@@ -198,16 +199,16 @@ class Test(unittest.TestCase):
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED,
            state_change_count=strategies.integers(min_value=0, max_value=10000))
     def test_backup_random_state_preserves_the_pseudorandom_sequence(self, xs, state_change_count):
-        random.seed(config.RANDOM_SEED)
+        self.random.seed(config.RANDOM_SEED)
         for _ in range(state_change_count):
-            random.random()
+            self.random.random()
 
         backup = self._backup_and_retrieve(xs)
         random_state_db = ast.literal_eval(backup['random_state'])
 
-        expected_random_sequence = [random.random() for _ in range(state_change_count)]
-        random.setstate(random_state_db)
-        from_db_random_sequence = (random.random() for _ in range(state_change_count))
+        expected_random_sequence = [self.random.random() for _ in range(state_change_count)]
+        self.random.setstate(random_state_db)
+        from_db_random_sequence = (self.random.random() for _ in range(state_change_count))
 
         for expected, from_db in zip(expected_random_sequence, from_db_random_sequence):
             self.assertAlmostEqual(
