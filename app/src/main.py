@@ -5,12 +5,13 @@ import random
 import ast
 import datetime
 import time
+import itertools
 
 import src.config as config
 import src.util as util
 
 
-flask_app = util.make_flask(__name__)
+flask_app, celery_app, celery_logger = util.make_app(__name__)
 
 bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)
@@ -63,18 +64,18 @@ def normalized_messiness(seq):
 # TODO break up this to something more sane:
 #  - create the state backup before calling this task and pass its id
 @celery_app.task
-def sort_until_done(integers):
+def sort_until_done(sequence):
     """
-    Bogosort integers until it is sorted.
+    Bogosort sequence until it is sorted.
     Writes iterations to the database.
     Writes backups of the sorting state at BACKUP_INTERVAL iterations.
     """
-    this_bogo_id = create_new_bogo(integers)
+    this_bogo_id = create_new_bogo(sequence)
 
-    celery_logger.info('Sorting {} integers with bogo id {}.'.format(len(integers), this_bogo_id))
+    celery_logger.info('Sorting {} sequence with bogo id {}.'.format(len(sequence), this_bogo_id))
 
-    i = 0
-    messiness = normalized_messiness(integers)
+    messiness = normalized_messiness(sequence)
+    iterations = 0
     # store_iteration(this_bogo_id, messiness)
 
     while messiness > 0:
@@ -236,38 +237,6 @@ def bogo_main():
 
     for seq in not_yet_sorted:
         print("Calling sort_until_done with seq of len {}".format(len(seq)))
-        if shutdown_thread_command_received:
-            print("thread shutdown command received, breaking loop")
-            return
         sort_until_done(seq)
-
-
-def run_bogo():
-    if bogo_thread and bogo_thread.is_alive():
-        raise RuntimeError("The bogo thread is already running, will not start a new one.")
-    global bogo_thread
-    bogo_thread = threading.Thread(target=bogo_main)
-    bogo_thread.start()
-
-
-@flask_app.cli.command('run_bogo')
-def run_bogo_command():
-    try:
-        run_bogo()
-    except RuntimeError as e:
-        print("\n".join(e.args), file=sys.stderr)
-
-
-@flask_app.cli.command('stop_bogo')
-def stop_bogo_command():
-    if bogo_thread and bogo_thread.is_alive():
-        print("Turn on shutdown switch.")
-        global shutdown_thread_command_received
-        shutdown_thread_command_received = True
-        bogo_thread.join()
-        print("Bogo thread killed.")
-    else:
-        print("No running bogo thread")
-
 
 
