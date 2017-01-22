@@ -10,9 +10,10 @@ import src.config as config
 import src.util as util
 
 
-random.seed(config.RANDOM_SEED)
+flask_app = util.make_flask(__name__)
 
-flask_app, celery_app, celery_logger = util.make_app(__name__)
+bogo_random = random.Random()
+bogo_random.seed(config.RANDOM_SEED)
 
 
 iteration_speed = 0.0
@@ -205,23 +206,68 @@ def execute_and_fetch_one(query, args=()):
 def get_previous_state_all():
     return execute_and_fetch_one("select * from backups order by id desc")
 
-@flask_app.cli.command('restart_from_backup')
-def restart_from_previous_known_state():
-    raise NotImplementedError("restart from previous state not implemented")
-    row = get_previous_state_from_db()
-    sequence, random_module_state = tuple(map(ast.literal_eval, row))
-    random.setstate(random_module_state)
-    bogo(sequence)
+
+def all_sequences(start, step, max_length):
+    seq_upper_limits = range(start, max_length + step, step)
+    return (list(reversed(range(1, n))) for n in seq_upper_limits)
 
 
-def all_sequences(step, max_length):
-    seq_upper_limits = range(step + 1, max_length + step, step)
-    return (list(range(1, n)) for n in seq_upper_limits)
+def bogo_main():
+    """
+    Main sorting function responsible of sorting every defined sequence from
+    list(range(1, 11)) up to list(range(1, config.SEQUENCE_MAX_LENGTH)).
+    It might be a good idea to run this in a thread.
+
+    Automatically restarts from previous known state.
+    """
+    step = config.SEQUENCE_STEP
+    max_length = config.SEQUENCE_MAX_LENGTH
+    previous_state = get_previous_state_all()
+
+    if previous_state:
+        previous_seq = ast.literal_eval(previous_state['sequence'])
+        next_seq_len = step + len(previous_seq)
+        not_yet_sorted = itertools.chain((previous_seq, ), all_sequences(next_seq_len, step, max_length))
+        previous_random = ast.literal_eval(previous_state['random_state'])
+        bogo_random.setstate(previous_random)
+    else:
+        next_seq_len = step + 1
+        not_yet_sorted = all_sequences(next_seq_len, step, max_length)
+
+    for seq in not_yet_sorted:
+        print("Calling sort_until_done with seq of len {}".format(len(seq)))
+        if shutdown_thread_command_received:
+            print("thread shutdown command received, breaking loop")
+            return
+        sort_until_done(seq)
 
 
-def bogo(sequence=None):
-    for seq in all_sequences(config.SEQUENCE_STEP, config.SEQUENCE_MAX_LENGTH):
-        seq.reverse()
-        result = sort_until_done.delay(seq)
-        result.wait()
+def run_bogo():
+    if bogo_thread and bogo_thread.is_alive():
+        raise RuntimeError("The bogo thread is already running, will not start a new one.")
+    global bogo_thread
+    bogo_thread = threading.Thread(target=bogo_main)
+    bogo_thread.start()
+
+
+@flask_app.cli.command('run_bogo')
+def run_bogo_command():
+    try:
+        run_bogo()
+    except RuntimeError as e:
+        print("\n".join(e.args), file=sys.stderr)
+
+
+@flask_app.cli.command('stop_bogo')
+def stop_bogo_command():
+    if bogo_thread and bogo_thread.is_alive():
+        print("Turn on shutdown switch.")
+        global shutdown_thread_command_received
+        shutdown_thread_command_received = True
+        bogo_thread.join()
+        print("Bogo thread killed.")
+    else:
+        print("No running bogo thread")
+
+
 
