@@ -76,23 +76,14 @@ def sort_until_done(integers):
     messiness = normalized_messiness(integers)
     # store_iteration(this_bogo_id, messiness)
 
-    mesmin = messiness
-    mesminlst = integers[:]
-    _integers = integers[:]
     while messiness > 0:
         begin_time = time.perf_counter()
-        random.shuffle(_integers)
-        messiness = normalized_messiness(_integers)
-        if messiness < mesmin:
-            mesmin = messiness
-            mesminlst=  _integers[:]
-        # store_iteration(this_bogo_id, messiness)
-        if i >= config.BACKUP_INTERVAL:
-            backup_sorting_state(_integers)
-            celery_logger.info('\nbest so far {}'.format(mesmin))
-            celery_logger.info('{}'.format(mesminlst))
-            i = 0
-        i += 1
+        bogo_random.shuffle(sequence)
+        messiness = normalized_messiness(sequence)
+        if iterations >= config.BACKUP_INTERVAL:
+            backup_sorting_state(sequence, bogo_random)
+            iterations = 0
+        iterations += 1
         iteration_time = time.perf_counter() - begin_time
         update_iteration_speed(1.0/iteration_time)
 
@@ -125,7 +116,7 @@ def close_bogo(bogo_id):
     db = get_db()
 
     fetch_query = "select * from bogos where id=?"
-    bogo = db.execute(fetch_query, (bogo_id,)).fetchone()
+    bogo = execute_and_fetch_one(fetch_query, (bogo_id, ))
 
     if not bogo:
         raise RuntimeError("Attempted to close a bogo with id {} but none was found in the database.".format(bogo_id))
@@ -190,7 +181,7 @@ def initdb_command():
         print("Cancelled")
 
 
-def backup_sorting_state(sequence):
+def backup_sorting_state(sequence, random_instance):
     """
     Write sequence, the state of the random module and the date into the database.
     Returns the id of the inserted backup row.
@@ -199,7 +190,7 @@ def backup_sorting_state(sequence):
     query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
     backup_data = (
         repr(sequence),
-        repr(random.getstate()),
+        repr(random_instance.getstate()),
         datetime.datetime.utcnow().isoformat()
     )
     cursor = db.execute(query, backup_data)
@@ -207,11 +198,12 @@ def backup_sorting_state(sequence):
     return cursor.lastrowid
 
 
-def get_previous_state_from_db():
-    db = get_db()
-    query = "select * from backups order by id desc"
-    return db.execute(query).fetchone()
+def execute_and_fetch_one(query, args=()):
+    return get_db().execute(query, args).fetchone()
 
+
+def get_previous_state_all():
+    return execute_and_fetch_one("select * from backups order by id desc")
 
 @flask_app.cli.command('restart_from_backup')
 def restart_from_previous_known_state():
