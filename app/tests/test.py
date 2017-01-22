@@ -219,6 +219,22 @@ class Test(unittest.TestCase):
             )
 
 
+    @unittest.skip("not implemented")
+    def test_bogo_main_starts_from_correct_backup(self):
+        self.fail("not implemented")
+
+    @unittest.skip("not implemented")
+    def test_bogo_main_starts_from_new_sequence_if_no_backups_exit(self):
+        self.fail("not implemented")
+
+    @unittest.skip("not implemented")
+    def test_bogo_starts_on_command(self):
+        self.fail("not implemented")
+
+    @unittest.skip("not implemented")
+    def test_bogo_stops_on_command(self):
+        self.fail("not implemented")
+
     def tearDown(self):
         os.close(self.db_file_desc)
         os.unlink(main.flask_app.config['DATABASE'])
