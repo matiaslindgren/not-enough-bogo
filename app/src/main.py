@@ -54,10 +54,6 @@ def normalized_messiness(seq):
     return int(math.ceil(sum(abs(i + 1 - x) for i, x in enumerate(seq))/len(seq)))
 
 
-# TODO track iteration speed in some 'rationally global' variable
-# TODO break up this to something more sane:
-#  - create the state backup before calling this task and pass its id
-@celery_app.task
 def sort_until_done(sequence):
     """
     Bogosort sequence until it is sorted.
@@ -219,22 +215,35 @@ def bogo_main():
 
     Automatically restarts from previous known state.
     """
+    print("Initializing bogo_main")
     step = config.SEQUENCE_STEP
     max_length = config.SEQUENCE_MAX_LENGTH
+    print("Step {}".format(step))
+    print("Max length {}".format(max_length))
     previous_state = get_previous_state_all()
 
     if previous_state:
         previous_seq = ast.literal_eval(previous_state['sequence'])
-        next_seq_len = step + len(previous_seq)
+        print("Previous backup found, seq of len {}".format(len(previous_seq)))
+        next_seq_len = step + 1 + len(previous_seq)
         not_yet_sorted = itertools.chain((previous_seq, ), all_sequences(next_seq_len, step, max_length))
         previous_random = ast.literal_eval(previous_state['random_state'])
         bogo_random.setstate(previous_random)
     else:
+        print("No backups found, starting a new bogo cycle.")
         next_seq_len = step + 1
         not_yet_sorted = all_sequences(next_seq_len, step, max_length)
 
+    not_yet_sorted = tuple(not_yet_sorted)
+    print("Begin bogosort loop with {} lists".format(len(not_yet_sorted)))
     for seq in not_yet_sorted:
-        print("Calling sort_until_done with seq of len {}".format(len(seq)))
+        print("Calling sort_until_done with seq {}".format(seq))
         sort_until_done(seq)
+        print("Done")
+
+
+@flask_app.cli.command("run_bogo")
+def run_bogo_command():
+    res = bogo_main.delay()
 
 
