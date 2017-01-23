@@ -14,7 +14,7 @@ import src.config as config
 
 
 settings.register_profile('dev', settings(max_examples=10))
-settings.register_profile('ci', settings(max_examples=1000))
+settings.register_profile('ci', settings(max_examples=500))
 settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', default='dev'))
 
 
