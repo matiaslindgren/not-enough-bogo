@@ -26,7 +26,7 @@ def get_iteration_speed():
 
 @flask_app.route("/")
 def main():
-    return flask.render_template('main.html')
+    return flask.render_template('index.html')
 
 
 @flask_app.route("/current_speed.json")
