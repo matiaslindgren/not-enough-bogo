@@ -2,6 +2,7 @@ import flask
 import os.path
 import logging
 import celery.utils.log as celery_log
+import redis
 import src.config as config
 import src.tasks as tasks
 
@@ -23,8 +24,13 @@ def make_celery_logger(name):
     return celery_logger
 
 
+def make_redis():
+    return redis.StrictRedis(host="localhost", port=config.REDIS_PORT)
+
+
 def make_app(name):
     flask_app = make_flask(name)
     celery_app = tasks.make_celery(flask_app)
     celery_logger = make_celery_logger(name)
-    return flask_app, celery_app, celery_logger
+    redis_app = make_redis()
+    return flask_app, celery_app, celery_logger, redis_app

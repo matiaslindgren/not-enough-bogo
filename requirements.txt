@@ -2,3 +2,4 @@ flask
 celery
 hypothesis
 python-dateutil
+redis

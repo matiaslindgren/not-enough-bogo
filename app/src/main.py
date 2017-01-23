@@ -11,25 +11,18 @@ import src.config as config
 import src.util as util
 
 
-flask_app, celery_app, celery_logger = util.make_app(__name__)
+flask_app, celery_app, celery_logger, redis_app = util.make_app(__name__)
 
 bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)
 
 
-iteration_speed = 0.0
 def update_iteration_speed(iter_per_second):
-    global iteration_speed
-    iteration_speed = iter_per_second
+    return redis_app.set("iter_speed", iter_per_second)
 
 def get_iteration_speed():
-    return iteration_speed
+    return redis_app.get("iter_speed")
 
-
-@flask_app.cli.command("test1")
-def test1():
-    res = sort_until_done.delay(list(reversed(range(1, 101))))
-    res.wait()
 
 @flask_app.route("/")
 def main():
@@ -38,8 +31,9 @@ def main():
 
 @flask_app.route("/current_speed.json")
 def get_current_iteration_speed():
-    print("get_current_iteration_speed at {}".format(get_iteration_speed()))
-    return flask.jsonify(current_speed=get_iteration_speed())
+    speed = get_iteration_speed().decode('utf-8')
+    print("get_current_iteration_speed at {}".format(speed))
+    return flask.jsonify(current_speed=speed)
 
 
 @flask_app.route("/history")
@@ -76,6 +70,7 @@ def sort_until_done(sequence):
 
     messiness = normalized_messiness(sequence)
     iterations = 0
+    cycle_total_time = 0.0
     # store_iteration(this_bogo_id, messiness)
 
     while messiness > 0:
@@ -83,11 +78,14 @@ def sort_until_done(sequence):
         bogo_random.shuffle(sequence)
         messiness = normalized_messiness(sequence)
         if iterations >= config.BACKUP_INTERVAL:
+            celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
             backup_sorting_state(sequence, bogo_random)
             iterations = 0
         iterations += 1
-        iteration_time = time.perf_counter() - begin_time
-        update_iteration_speed(1.0/iteration_time)
+        cycle_total_time += time.perf_counter() - begin_time
+        if iterations % config.ITER_SPEED_RESOLUTION == 0:
+            update_iteration_speed(config.ITER_SPEED_RESOLUTION/cycle_total_time)
+            cycle_total_time = 0.0
 
     close_bogo(this_bogo_id)
 
