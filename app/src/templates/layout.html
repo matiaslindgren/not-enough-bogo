@@ -14,6 +14,9 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 
         <script src="{{ url_for('static', filename='js/vendor/modernizr-2.8.3.min.js') }}"></script>
+
+        <script src="https://unpkg.com/react@15/dist/react.min.js"></script>
+        <script src="https://unpkg.com/react-dom@15/dist/react-dom.min.js"></script>
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -23,11 +26,12 @@
         {% block body_content %}
         <p>Most interesting, it seems that some unknown peculiarities are taking place at the server side.</p>
         </br>
-        <b>body_content block not overridden</b>
+        <b>The body_content block was not overridden</b>
         {% endblock %}
 
         <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+        <script src="{{ url_for('static', filename='jsx/ui.jsx') }}"></script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <script>
