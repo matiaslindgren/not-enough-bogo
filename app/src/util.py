@@ -12,7 +12,6 @@ def make_flask(name):
     flask_app.config.update(
         DATABASE=os.path.join(flask_app.root_path, config.DATABASE_NAME),
         CELERY_BROKER_URL=config.BROKER_URL,
-        CELERY_RESULT_BACKEND=config.BROKER_URL,
         DATABASE_SCHEMA=os.path.join(flask_app.root_path, config.SCHEMA_NAME)
     )
     return flask_app
