@@ -207,6 +207,7 @@ def all_sequences(start, step, max_length):
     return (list(reversed(range(1, n))) for n in seq_upper_limits)
 
 
+@celery_app.task(ignore_result=True)
 def bogo_main():
     """
     Main sorting function responsible of sorting every defined sequence from
