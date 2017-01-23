@@ -5,3 +5,6 @@ __pycache__
 
 *.db
 .hypothesis
+
+node_modules
+*log

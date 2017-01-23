@@ -1,0 +1,11 @@
+{
+  "name": "not-enough-bogo",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "babel app/src/static/jsx -d app/src/static/build"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.0.0",
+    "webpack": "^2.2.0"
+  }
+}
