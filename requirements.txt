@@ -6,4 +6,4 @@ hiredis
 python-dateutil
 
 hypothesis
-mockredispy
+fakeredis
