@@ -8,7 +8,11 @@ import bogo.tasks as tasks
 
 
 def make_flask(name):
-    flask_app = flask.Flask(name)
+    flask_app = flask.Flask(
+        name,
+        template_folder="../templates",
+        static_folder="../static"
+    )
     flask_app.config.update(
         DATABASE=os.path.join(flask_app.root_path, config.DATABASE_NAME),
         CELERY_BROKER_URL=config.BROKER_URL,
