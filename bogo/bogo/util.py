@@ -28,7 +28,12 @@ def make_celery_logger(name):
 
 
 def make_redis():
-    return redis.StrictRedis(host="localhost", port=config.REDIS_PORT)
+    return redis.StrictRedis(
+        host="localhost",
+        port=config.REDIS_PORT,
+        db=0,
+        decode_responses=config.REDIS_DECODE_RESPONSES
+    )
 
 
 def make_app(name):

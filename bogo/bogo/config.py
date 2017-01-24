@@ -1,6 +1,9 @@
 
 BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+
 REDIS_PORT = '6379'
+REDIS_DECODE_RESPONSES = True
+
 DATABASE_NAME = 'app.db'
 SCHEMA_NAME = "schema.sql"
 RANDOM_SEED = 42
