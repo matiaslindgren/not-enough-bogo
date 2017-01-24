@@ -9,8 +9,8 @@ import random
 import tempfile
 import datetime
 import dateutil.parser as date_parser
-import src.main as main
-import src.config as config
+import bogo.main as main
+import bogo.config as config
 
 
 settings.register_profile('dev', settings(max_examples=10))

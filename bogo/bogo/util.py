@@ -3,8 +3,8 @@ import os.path
 import logging
 import celery.utils.log as celery_log
 import redis
-import src.config as config
-import src.tasks as tasks
+import bogo.config as config
+import bogo.tasks as tasks
 
 
 def make_flask(name):

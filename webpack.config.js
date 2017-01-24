@@ -1,9 +1,9 @@
 var path = require('path');
 
-const buildPath = 'app/src/static/build';
+const buildPath = 'bogo/static/build';
 
 const config = {
-  entry: './app/src/static/jsx/ui.jsx',
+  entry: './bogo/static/jsx/ui.jsx',
   output: {
     path: path.resolve(__dirname,  buildPath),
     filename: 'ui.min.js'

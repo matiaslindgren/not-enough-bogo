@@ -7,8 +7,8 @@ import datetime
 import time
 import itertools
 
-import src.config as config
-import src.util as util
+import bogo.config as config
+import bogo.util as util
 
 
 flask_app, celery_app, celery_logger, redis_app = util.make_app(__name__)
