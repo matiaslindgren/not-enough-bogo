@@ -26,6 +26,20 @@
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
+        <nav class="navbar navbar-default">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <a class="navbar-brand active" href="/">
+                <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
+              </a>
+            </div>
+           <ul class="nav navbar-nav">
+             <li><a href="{{ url_for('history') }}">History</a></li>
+             <li><a href="{{ url_for('about') }}">WTF?</a></li>
+            </ul>
+          </div>
+        </nav>
+
         {% block body_content %}
         <p>Most interesting, it seems that some unknown peculiarities are taking place at the server side.</p>
         </br>
