@@ -1,5 +1,9 @@
 flask
 celery
-hypothesis
-python-dateutil
 redis
+hiredis
+
+python-dateutil
+
+hypothesis
+mockredispy
