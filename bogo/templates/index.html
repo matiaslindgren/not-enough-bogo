@@ -2,15 +2,17 @@
 {% block body_content %}
 
 <script id="bogo-data-api" type="application/json">
-{ "bogoStatsUrl": "{{ bogo_stats_url }}" }
+{ "bogoStatsUrl": "{{ bogo_stats_url }}",
+  "startDate": "{{ start_date }}",
+  "sequenceLength": "{{ sequence_length }}" }
 </script>
+
+<img src="{{ url_for('static', filename='img/giphy.gif') }}"
+     alt="imagine a funny gif"
+     style="width:128px;heigth:128px;"/>
 
 <div class="container">
   <div id="react-root"></div>
 </div>
-
-<img src="{{ url_for('static', filename='img/giphy.gif') }}"
-     alt="Your browser seems to be from the middle ages"
-     style="width:128px;heigth:128px;"/>
 
 {% endblock %}
