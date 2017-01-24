@@ -25,6 +25,10 @@ def update_iteration_speed(iter_per_second):
     return redis_app.set("iter_speed", iter_per_second)
 
 
+def get_active_bogo_id():
+    return redis_app.get("active_bogo_id")
+
+
 def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
     """
     Clear redis cache and insert new values.
@@ -44,12 +48,12 @@ def get_stats(bogo_id):
     """
     if not bogo_id:
         stats = {}
-    elif redis_app.get('active_bogo_id') == str(bogo_id):
+    elif get_active_bogo_id() == str(bogo_id):
         stats = {
             "startDate":      redis_app.get("start_date"),
             "endDate":        None,
             "sequenceLength": redis_app.get("seqeuence_length"),
-            "currentSpeed":   redis_app.get("iter_speed")
+            "currentSpeed":   ast.literal_eval(redis_app.get("iter_speed"))
         }
     else:
         bogo_row = get_bogo_by_id(bogo_id)
@@ -69,27 +73,39 @@ def get_stats(bogo_id):
 # ROUTES
 ##############################
 
-# TODO redirect to active bogo url
 @flask_app.route("/")
-def main():
-    return flask.render_template('index.html')
+def index():
+    bogo_id = get_active_bogo_id()
+    if not bogo_id:
+        print("WARNING: no active bogo in redis cache!")
+        bogo_id = get_newest_bogo_id()
+    return flask.redirect(flask.url_for("view_bogo", bogo_id=bogo_id))
+
+
+@flask_app.route("/about")
+def about():
+    return "nothing here, yet"
+
+
+@flask_app.route("/history")
+def history():
+    return "nothing here, yet"
+
 
 @flask_app.route("/bogo/<int:bogo_id>")
 def view_bogo(bogo_id):
-    bogo_stats_url = flask.request.base_url + "/statistics.json"
-    return flask.render_template('index.html', bogo_stats_url=bogo_stats_url)
+    render_context = {
+        "bogo_stats_url": flask.request.base_url + "/statistics.json",
+        "start_date": redis_app.get('start_date'),
+        "sequence_length": redis_app.get('sequence_length')
+    }
+    return flask.render_template('index.html', **render_context)
 
 
 @flask_app.route("/bogo/<int:bogo_id>/statistics.json")
 def bogo_statistics(bogo_id):
     stats = get_stats(bogo_id)
-    return flask.jsonify(**stats)
-
-
-@flask_app.route("/history")
-def history():
-    # return flask.render_template('history.html', name=name)
-    return "TODO"
+    return flask.jsonify(currentSpeed=stats['currentSpeed'], endDate=stats['endDate'])
 
 
 ##############################
@@ -246,6 +262,10 @@ def get_bogo_by_id(bogo_id):
 
 def get_previous_state_all():
     return execute_and_fetch_one("select * from backups order by id desc")
+
+
+def get_newest_bogo_id():
+    return execute_and_fetch_one("select id from bogos order by id desc")
 
 
 def create_new_bogo(sequence):
