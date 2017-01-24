@@ -2,6 +2,8 @@
 Tests written using the property based testing library hypothesis.
 """
 import unittest
+import unittest.mock as mock
+import fakeredis
 from hypothesis import strategies, given, settings, assume
 import os
 import ast
@@ -18,6 +20,7 @@ settings.register_profile('ci', settings(max_examples=500))
 settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', default='dev'))
 
 
+@mock.patch('bogo.main.redis_app', fakeredis.FakeStrictRedis())
 class Test(unittest.TestCase):
 
     RANGE_FROM_ONE = strategies.builds(
