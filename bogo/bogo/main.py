@@ -17,6 +17,10 @@ bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)
 
 
+##############################
+# REDIS
+##############################
+
 def update_iteration_speed(iter_per_second):
     return redis_app.set("iter_speed", iter_per_second)
 
@@ -61,6 +65,9 @@ def get_stats(bogo_id):
     return stats
 
 
+##############################
+# ROUTES
+##############################
 
 # TODO redirect to active bogo url
 @flask_app.route("/")
@@ -85,6 +92,11 @@ def history():
     return "TODO"
 
 
+##############################
+# BOGO LOGIC
+##############################
+
+
 def normalized_messiness(seq):
     """
     Heuristic sortedness measure.
@@ -95,6 +107,11 @@ def normalized_messiness(seq):
     integer in seq that is further away from its index.
     """
     return int(math.ceil(sum(abs(i + 1 - x) for i, x in enumerate(seq))/len(seq)))
+
+
+def all_sequences(start, step, max_length):
+    seq_upper_limits = range(start, max_length + step, step)
+    return (list(reversed(range(1, n))) for n in seq_upper_limits)
 
 
 def sort_until_done(sequence):
@@ -129,6 +146,106 @@ def sort_until_done(sequence):
     close_bogo(this_bogo_id)
 
     celery_logger.info('Done sorting bogo {}.'.format(this_bogo_id))
+
+
+@celery_app.task(ignore_result=True)
+def bogo_main():
+    """
+    Main sorting function responsible of sorting every defined sequence from
+    list(range(1, 11)) up to list(range(1, config.SEQUENCE_MAX_LENGTH)).
+    It might be a good idea to run this in a thread.
+
+    Automatically restarts from previous known state.
+    """
+    print("Initializing bogo_main")
+    step = config.SEQUENCE_STEP
+    max_length = config.SEQUENCE_MAX_LENGTH
+    print("Step {}".format(step))
+    print("Max length {}".format(max_length))
+    previous_state = get_previous_state_all()
+
+    if previous_state:
+        previous_seq = ast.literal_eval(previous_state['sequence'])
+        print("Previous backup found, seq of len {}".format(len(previous_seq)))
+        next_seq_len = step + 1 + len(previous_seq)
+        not_yet_sorted = itertools.chain((previous_seq, ), all_sequences(next_seq_len, step, max_length))
+        previous_random = ast.literal_eval(previous_state['random_state'])
+        bogo_random.setstate(previous_random)
+    else:
+        print("No backups found, starting a new bogo cycle.")
+        next_seq_len = step + 1
+        not_yet_sorted = all_sequences(next_seq_len, step, max_length)
+
+    not_yet_sorted = tuple(not_yet_sorted)
+    print("Begin bogosort loop with {} lists".format(len(not_yet_sorted)))
+    for seq in not_yet_sorted:
+        print("Calling sort_until_done with seq {}".format(seq))
+        sort_until_done(seq)
+        print("Done")
+
+
+##############################
+# DATABASE IO
+##############################
+
+def connect_db():
+    connection = sqlite3.connect(flask_app.config['DATABASE'])
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+@flask_app.teardown_appcontext
+def _close_db(error):
+    if hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
+        getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME).close()
+
+
+def get_db():
+    """
+    Return a connection to the app database.
+    """
+    if not hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
+        setattr(flask.g, config.APP_CONTEXT_DATABASE_NAME, connect_db())
+    return getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME)
+
+
+def init_db():
+    """
+    Run the sql schema script on the database.
+    """
+    db = get_db()
+    with flask_app.open_resource(flask_app.config['DATABASE_SCHEMA'], mode='r') as schema:
+        db.cursor().executescript(schema.read())
+    db.commit()
+
+
+def backup_sorting_state(sequence, random_instance):
+    """
+    Write sequence, the state of the random module and the date into the database.
+    Returns the id of the inserted backup row.
+    """
+    db = get_db()
+    query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
+    backup_data = (
+        repr(sequence),
+        repr(random_instance.getstate()),
+        datetime.datetime.utcnow().isoformat()
+    )
+    cursor = db.execute(query, backup_data)
+    db.commit()
+    return cursor.lastrowid
+
+
+def execute_and_fetch_one(query, args=()):
+    return get_db().execute(query, args).fetchone()
+
+
+def get_bogo_by_id(bogo_id):
+    return execute_and_fetch_one("select * from bogos where id=?", (bogo_id, ))
+
+
+def get_previous_state_all():
+    return execute_and_fetch_one("select * from backups order by id desc")
 
 
 def create_new_bogo(sequence):
@@ -176,35 +293,14 @@ def close_bogo(bogo_id):
     redis_app.flushall()
 
 
-def connect_db():
-    connection = sqlite3.connect(flask_app.config['DATABASE'])
-    connection.row_factory = sqlite3.Row
-    return connection
+##############################
+# CLI COMMANDS
+##############################
 
 
-@flask_app.teardown_appcontext
-def _close_db(error):
-    if hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
-        getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME).close()
-
-
-def get_db():
-    """
-    Return a connection to the app database.
-    """
-    if not hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
-        setattr(flask.g, config.APP_CONTEXT_DATABASE_NAME, connect_db())
-    return getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME)
-
-
-def init_db():
-    """
-    Run the sql schema script on the database.
-    """
-    db = get_db()
-    with flask_app.open_resource(flask_app.config['DATABASE_SCHEMA'], mode='r') as schema:
-        db.cursor().executescript(schema.read())
-    db.commit()
+@flask_app.cli.command("run_bogo")
+def run_bogo_command():
+    res = bogo_main.delay()
 
 
 @flask_app.cli.command('initdb')
@@ -216,77 +312,5 @@ def initdb_command():
     else:
         print("Cancelled")
 
-
-def backup_sorting_state(sequence, random_instance):
-    """
-    Write sequence, the state of the random module and the date into the database.
-    Returns the id of the inserted backup row.
-    """
-    db = get_db()
-    query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
-    backup_data = (
-        repr(sequence),
-        repr(random_instance.getstate()),
-        datetime.datetime.utcnow().isoformat()
-    )
-    cursor = db.execute(query, backup_data)
-    db.commit()
-    return cursor.lastrowid
-
-
-def execute_and_fetch_one(query, args=()):
-    return get_db().execute(query, args).fetchone()
-
-def get_bogo_by_id(bogo_id):
-    return execute_and_fetch_one("select * from bogos where id=?", (bogo_id, ))
-
-def get_previous_state_all():
-    return execute_and_fetch_one("select * from backups order by id desc")
-
-
-def all_sequences(start, step, max_length):
-    seq_upper_limits = range(start, max_length + step, step)
-    return (list(reversed(range(1, n))) for n in seq_upper_limits)
-
-
-@celery_app.task(ignore_result=True)
-def bogo_main():
-    """
-    Main sorting function responsible of sorting every defined sequence from
-    list(range(1, 11)) up to list(range(1, config.SEQUENCE_MAX_LENGTH)).
-    It might be a good idea to run this in a thread.
-
-    Automatically restarts from previous known state.
-    """
-    print("Initializing bogo_main")
-    step = config.SEQUENCE_STEP
-    max_length = config.SEQUENCE_MAX_LENGTH
-    print("Step {}".format(step))
-    print("Max length {}".format(max_length))
-    previous_state = get_previous_state_all()
-
-    if previous_state:
-        previous_seq = ast.literal_eval(previous_state['sequence'])
-        print("Previous backup found, seq of len {}".format(len(previous_seq)))
-        next_seq_len = step + 1 + len(previous_seq)
-        not_yet_sorted = itertools.chain((previous_seq, ), all_sequences(next_seq_len, step, max_length))
-        previous_random = ast.literal_eval(previous_state['random_state'])
-        bogo_random.setstate(previous_random)
-    else:
-        print("No backups found, starting a new bogo cycle.")
-        next_seq_len = step + 1
-        not_yet_sorted = all_sequences(next_seq_len, step, max_length)
-
-    not_yet_sorted = tuple(not_yet_sorted)
-    print("Begin bogosort loop with {} lists".format(len(not_yet_sorted)))
-    for seq in not_yet_sorted:
-        print("Calling sort_until_done with seq {}".format(seq))
-        sort_until_done(seq)
-        print("Done")
-
-
-@flask_app.cli.command("run_bogo")
-def run_bogo_command():
-    res = bogo_main.delay()
 
 
