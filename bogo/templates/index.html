@@ -1,9 +1,16 @@
 {% extends "layout.html" %}
 {% block body_content %}
+
+<script id="bogo-data-api" type="application/json">
+{ "bogoStatsUrl": "{{ bogo_stats_url }}" }
+</script>
+
 <div class="container">
   <div id="react-root"></div>
 </div>
+
 <img src="{{ url_for('static', filename='img/giphy.gif') }}"
      alt="Your browser seems to be from the middle ages"
      style="width:128px;heigth:128px;"/>
+
 {% endblock %}

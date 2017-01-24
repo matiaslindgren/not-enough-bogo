@@ -62,14 +62,19 @@ def get_stats(bogo_id):
 
 
 
+# TODO redirect to active bogo url
 @flask_app.route("/")
 def main():
     return flask.render_template('index.html')
 
+@flask_app.route("/bogo/<int:bogo_id>")
+def view_bogo(bogo_id):
+    bogo_stats_url = flask.request.base_url + "/statistics.json"
+    return flask.render_template('index.html', bogo_stats_url=bogo_stats_url)
 
-# TODO bogo id as path variable
+
 @flask_app.route("/bogo/<int:bogo_id>/statistics.json")
-def sorting_statistics(bogo_id=None):
+def bogo_statistics(bogo_id):
     stats = get_stats(bogo_id)
     return flask.jsonify(**stats)
 
