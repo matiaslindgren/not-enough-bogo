@@ -9,16 +9,17 @@ echo
 source $HOME/.virtualenvs/bogoenv/bin/activate
 export FLASK_APP=bogo/bogo/main.py
 python3 -m unittest discover -s bogo -v
-echo
 
-echo
 if [[ $? != 0 ]]; then
+  echo
   echo Something went wrong
+  echo
   exit $?
 else
+  echo
   echo Everything seems to be fine
+  echo ===========================
 fi
-echo
 echo
 
 python3 -m flask run

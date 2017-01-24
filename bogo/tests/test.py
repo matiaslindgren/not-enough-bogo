@@ -137,24 +137,6 @@ class Test(unittest.TestCase):
         )
 
 
-    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_store_iteration(self, xs):
-        with main.flask_app.app_context():
-            bogo_id = main.create_new_bogo(xs)
-            messiness = main.normalized_messiness(xs)
-            main.store_iteration(bogo_id, messiness)
-
-            db = main.get_db()
-            fetch_query = "select * from iterations where bogo=?"
-            iteration = db.execute(fetch_query, (bogo_id, )).fetchone()
-
-        self.assertEqual(
-            iteration['messiness'],
-            messiness,
-            "Iteration messiness inserted into the database was different from the messiness calculated before insertion."
-        )
-
-
     def _backup_and_retrieve(self, xs):
         with main.flask_app.app_context():
             main.backup_sorting_state(xs, self.random)
@@ -234,6 +216,16 @@ class Test(unittest.TestCase):
     @unittest.skip("not implemented")
     def test_bogo_stops_on_command(self):
         self.fail("not implemented")
+
+    @unittest.skip("not implemented")
+    def test_get_stats_returns_active_bogo(self):
+        self.fail("not implemented")
+
+    @unittest.skip("not implemented")
+    def test_get_stats_returns_nonactive_bogo(self):
+        self.fail("not implemented")
+
+
 
     def tearDown(self):
         os.close(self.db_file_desc)

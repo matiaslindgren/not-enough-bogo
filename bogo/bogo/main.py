@@ -20,8 +20,46 @@ bogo_random.seed(config.RANDOM_SEED)
 def update_iteration_speed(iter_per_second):
     return redis_app.set("iter_speed", iter_per_second)
 
-def get_iteration_speed():
-    return redis_app.get("iter_speed")
+
+def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
+    """
+    Clear redis cache and insert new values.
+    """
+    redis_app.flushall()
+    return (redis_app.set("active_bogo_id", bogo_id) and
+            redis_app.set("sequence_length", sequence_length) and
+            redis_app.set("start_date", start_date) and
+            update_iteration_speed(0))
+
+
+def get_stats(bogo_id):
+    """
+    Retrieve sorting statistics for bogo with given id.
+    If the bogo is actively sorting a sequence, fetch
+    data from the redis cache, else from the database.
+    """
+    if not bogo_id:
+        stats = {}
+    elif redis_app.get('active_bogo_id') == str(bogo_id):
+        stats = {
+            "startDate":      redis_app.get("start_date"),
+            "endDate":        None,
+            "sequenceLength": redis_app.get("seqeuence_length"),
+            "currentSpeed":   redis_app.get("iter_speed")
+        }
+    else:
+        bogo_row = get_bogo_by_id(bogo_id)
+        if bogo_row:
+            stats = {
+                "startDate":      bogo_row['started'],
+                "endDate":        bogo_row['finished'],
+                "sequenceLength": bogo_row['sequence_length'],
+                "currentSpeed":   0
+            }
+        else:
+            stats = {}
+    return stats
+
 
 
 @flask_app.route("/")
@@ -29,11 +67,11 @@ def main():
     return flask.render_template('index.html')
 
 
-@flask_app.route("/current_speed.json")
-def get_current_iteration_speed():
-    speed = get_iteration_speed().decode('utf-8')
-    print("get_current_iteration_speed at {}".format(speed))
-    return flask.jsonify(current_speed=speed)
+# TODO bogo id as path variable
+@flask_app.route("/bogo/<int:bogo_id>/statistics.json")
+def sorting_statistics(bogo_id=None):
+    stats = get_stats(bogo_id)
+    return flask.jsonify(**stats)
 
 
 @flask_app.route("/history")
@@ -90,7 +128,8 @@ def sort_until_done(sequence):
 
 def create_new_bogo(sequence):
     """
-    Insert a new bogo into the database and return its id.
+    Insert a new bogo into the database and redis cache.
+    Return its id.
     """
     db = get_db()
 
@@ -102,12 +141,16 @@ def create_new_bogo(sequence):
     cursor = db.execute(query, data)
     db.commit()
 
-    return cursor.lastrowid
+    bogo_id = cursor.lastrowid
+    if not overwrite_bogo_cache(bogo_id, *data):
+        raise RuntimeError("Failed to write redis cache for bogo {}".format(bogo_id))
+
+    return bogo_id
 
 
 def close_bogo(bogo_id):
     """
-    Set the finished field of bogo with id bogo_id to now.
+    Set the finished field of bogo with id bogo_id to now and clear redis cache.
     """
     db = get_db()
 
@@ -125,15 +168,7 @@ def close_bogo(bogo_id):
     db.execute(query, data)
     db.commit()
 
-
-def store_iteration(bogo_id, messiness):
-    """
-    Insert a single iteration into the database.
-    """
-    db = get_db()
-    query = "insert into iterations (bogo, messiness) values (?, ?)"
-    db.execute(query, (bogo_id, messiness))
-    db.commit()
+    redis_app.flushall()
 
 
 def connect_db():
@@ -197,6 +232,8 @@ def backup_sorting_state(sequence, random_instance):
 def execute_and_fetch_one(query, args=()):
     return get_db().execute(query, args).fetchone()
 
+def get_bogo_by_id(bogo_id):
+    return execute_and_fetch_one("select * from bogos where id=?", (bogo_id, ))
 
 def get_previous_state_all():
     return execute_and_fetch_one("select * from backups order by id desc")
