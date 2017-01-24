@@ -33,11 +33,13 @@ class Statistics extends React.Component {
   render() {
     return (
       <div>
-        <table class="table table-condensed">
-          <Row label="Sorting started"  value={this.state.startDate} />
-          <Row label="Sorting finished" value={this.state.endDate} />
-          <Row label="Sequence length"  value={this.state.sequenceLength} />
-          <Row label="Current speed"    value={this.state.currentSpeed + " shuffles per second"} />
+        <table className="table table-condensed">
+          <tbody>
+            <Row label="Sorting started"  value={this.state.startDate} />
+            <Row label="Sorting finished" value={this.state.endDate} />
+            <Row label="Sequence length"  value={this.state.sequenceLength} />
+            <Row label="Current speed"    value={this.state.currentSpeed + " shuffles per second"} />
+          </tbody>
         </table>
       </div>
     );
@@ -48,8 +50,8 @@ class Statistics extends React.Component {
 function Row(props) {
   return (
     <tr>
-      <td>props.label</td>
-      <td>props.value</td>
+      <td>{props.label}</td>
+      <td>{props.value}</td>
     </tr>
   );
 }
