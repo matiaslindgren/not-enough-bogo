@@ -1,11 +1,37 @@
 {
   "name": "not-enough-bogo",
   "version": "1.0.0",
-  "scripts": {
-    "build": "babel app/src/static/jsx -d app/src/static/build"
+  "description": "the smell of madness",
+  "main": "index.js",
+  "dependencies": {
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2"
   },
   "devDependencies": {
-    "babel-cli": "^6.0.0",
-    "webpack": "^2.2.0"
-  }
+    "babel-core": "^6.22.1",
+    "babel-loader": "^6.2.10",
+    "babel-preset-env": "^1.1.8",
+    "babel-preset-es2015": "^6.22.0",
+    "babel-preset-react": "^6.22.0",
+    "webpack": "^1.14.0"
+  },
+  "babel": {
+    "presets": ["env", "react", "es2015"]
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matiaslindgren/not-enough-bogo.git"
+  },
+  "keywords": [
+    "bogosort"
+  ],
+  "author": "ml",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/matiaslindgren/not-enough-bogo/issues"
+  },
+  "homepage": "https://github.com/matiaslindgren/not-enough-bogo#readme"
 }
