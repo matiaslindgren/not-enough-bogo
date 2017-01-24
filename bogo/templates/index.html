@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% block body_content %}
-<div id="react-root">
+<div class="container">
+  <div id="react-root"></div>
 </div>
+<img src="{{ url_for('static', filename='img/giphy.gif') }}"
+     alt="Your browser seems to be from the middle ages"
+     style="width:128px;heigth:128px;"/>
 {% endblock %}
