@@ -137,31 +137,42 @@ def sort_until_done(sequence):
     Writes backups of the sorting state at BACKUP_INTERVAL iterations.
     """
     this_bogo_id = create_new_bogo(sequence)
+    backup_interval = config.BACKUP_INTERVAL
+    iter_speed_resolution = config.ITER_SPEED_RESOLUTION
 
-    celery_logger.info('Sorting {} sequence with bogo id {}.'.format(len(sequence), this_bogo_id))
+    celery_logger.info('Begin bogosorting with:\nsequence: {}\nbogo id: {}\nbackup interval: {}\niter speed resolution: {}.'.format(sequence, this_bogo_id, backup_interval, iter_speed_resolution))
 
     messiness = normalized_messiness(sequence)
-    iterations = 0
+    iteration = 0
+    total_iterations = 0
     cycle_total_time = 0.0
-    # store_iteration(this_bogo_id, messiness)
 
     while messiness > 0:
         begin_time = time.perf_counter()
         bogo_random.shuffle(sequence)
         messiness = normalized_messiness(sequence)
-        if iterations >= config.BACKUP_INTERVAL:
+        if iteration >= backup_interval:
             celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
             backup_sorting_state(sequence, bogo_random)
-            iterations = 0
-        iterations += 1
+            iteration = 0
+        iteration += 1
+        total_iterations += 1
         cycle_total_time += time.perf_counter() - begin_time
-        if iterations % config.ITER_SPEED_RESOLUTION == 0:
-            update_iteration_speed(config.ITER_SPEED_RESOLUTION/cycle_total_time)
+        if iteration % iter_speed_resolution == 0:
+            # This should be checked outside the task in a black box manner.
+            # Though, then it requires an additional thread
+            update_iteration_speed(iter_speed_resolution/cycle_total_time)
             cycle_total_time = 0.0
 
-    close_bogo(this_bogo_id)
+    celery_logger.info('Done sorting bogo {} in {} iterations.'.format(this_bogo_id, total_iterations))
 
-    celery_logger.info('Done sorting bogo {}.'.format(this_bogo_id))
+    close_bogo(this_bogo_id)
+    celery_logger.info('Bogo {} closed.'.format(this_bogo_id))
+
+    if redis_app.flushall():
+        celery_logger.info('Flushed all keys from the redis instance.')
+    else:
+        celery_logger.error('Flushing all redis keys failed.')
 
 
 @celery_app.task(ignore_result=True)
@@ -173,31 +184,27 @@ def bogo_main():
 
     Automatically restarts from previous known state.
     """
-    print("Initializing bogo_main")
     step = config.SEQUENCE_STEP
     max_length = config.SEQUENCE_MAX_LENGTH
-    print("Step {}".format(step))
-    print("Max length {}".format(max_length))
+    celery_logger.info("\nInitializing bogo_main with:\nsequence step: {}\nlast sequence length: {}\n".format(step, max_length))
     previous_state = get_previous_state_all()
 
     if previous_state:
         previous_seq = ast.literal_eval(previous_state['sequence'])
-        print("Previous backup found, seq of len {}".format(len(previous_seq)))
+        celery_logger.info("Previous backup found, seq of len {}".format(len(previous_seq)))
         next_seq_len = step + 1 + len(previous_seq)
         not_yet_sorted = itertools.chain((previous_seq, ), all_sequences(next_seq_len, step, max_length))
         previous_random = ast.literal_eval(previous_state['random_state'])
         bogo_random.setstate(previous_random)
     else:
-        print("No backups found, starting a new bogo cycle.")
+        celery_logger.info("No backups found, starting a new bogo cycle.")
         next_seq_len = step + 1
         not_yet_sorted = all_sequences(next_seq_len, step, max_length)
 
-    not_yet_sorted = tuple(not_yet_sorted)
-    print("Begin bogosort loop with {} lists".format(len(not_yet_sorted)))
     for seq in not_yet_sorted:
-        print("Calling sort_until_done with seq {}".format(seq))
+        celery_logger.info("Call sort_until_done with: {}".format(seq))
         sort_until_done(seq)
-        print("Done")
+        celery_logger.info("sort_until_done returned, parameter is now {}".format(seq))
 
 
 ##############################
@@ -292,7 +299,7 @@ def create_new_bogo(sequence):
 
 def close_bogo(bogo_id):
     """
-    Set the finished field of bogo with id bogo_id to now and clear redis cache.
+    Set the finished field of bogo with id bogo_id to now.
     """
     db = get_db()
 
@@ -310,7 +317,6 @@ def close_bogo(bogo_id):
     db.execute(query, data)
     db.commit()
 
-    redis_app.flushall()
 
 
 ##############################
