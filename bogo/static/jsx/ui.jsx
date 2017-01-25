@@ -11,9 +11,10 @@ class Statistics extends React.Component {
   }
 
   componentDidMount() {
-    // Statistics loaded for page with sorted sequence, don't refresh
-    if (this.state.stateName === "Sorted")
+    if (this.state.stateName === "Sorted") {
+      // Statistics loaded for page with sorted sequence, don't refresh
       return;
+    }
 
     this.timerID = setInterval(_ => this.refreshState(), 1000);
   }
@@ -60,8 +61,8 @@ class Statistics extends React.Component {
 function Row(props) {
   return (
     <tr>
-      <td>{props.label}</td>
-      <td>{props.value}</td>
+      <td className="col-xs-4">{props.label}</td>
+      <td className="col-xs-8">{props.value}</td>
     </tr>
   );
 }
