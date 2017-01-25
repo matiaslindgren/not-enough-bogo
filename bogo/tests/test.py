@@ -1,3 +1,65 @@
+"""
+Tests written using the property based testing library hypothesis.
+"""
+import unittest
+import unittest.mock as mock
+import fakeredis
+from hypothesis import strategies, given, settings, assume
+import random
+import os
+import ast
+
+import re
+import io
+import tempfile
+import logging
+
+import datetime
+import dateutil.parser as date_parser
+
+import bogo.main as main
+import bogo.config as config
+
+
+settings.register_profile('dev', settings(max_examples=10))
+settings.register_profile('ci', settings(max_examples=500))
+settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', default='dev'))
+
+
+def is_sorted(xs):
+    return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
+
+
+@mock.patch('bogo.main.redis_app', fakeredis.FakeStrictRedis())
+class Test(unittest.TestCase):
+
+    RANGE_FROM_ONE = strategies.builds(
+            lambda n: range(1, n),
+            strategies.integers(min_value=2, max_value=3000))
+    LIST_RANGE_INTEGERS_SORTED = RANGE_FROM_ONE.map(list)
+    LIST_RANGE_INTEGERS_SHUFFLED = RANGE_FROM_ONE.map(lambda rng: random.sample(rng, len(rng)))
+    SQL_MAX_INT = 2**63-1
+
+
+    def setUp(self):
+        self.db_file_desc, main.flask_app.config['DATABASE'] = tempfile.mkstemp()
+        main.flask_app.config['TESTING'] = True
+        self.app = main.flask_app.test_client()
+        with main.flask_app.app_context():
+            main.init_db()
+
+        # Ensure 2 different test cases never use a shared state of
+        # the global random module
+        self.random = random.Random()
+
+
+    @given(xs=LIST_RANGE_INTEGERS_SORTED)
+    def test_normalized_messiness_sorted(self, xs):
+        with main.flask_app.app_context():
+            self.assertEqual(
+                0,
+                main.normalized_messiness(xs),
+                "Sorted lists should have a messiness equal to 0"
             )
 
 
