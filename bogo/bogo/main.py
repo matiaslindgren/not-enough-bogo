@@ -186,7 +186,7 @@ def bogo_main():
     """
     step = config.SEQUENCE_STEP
     max_length = config.SEQUENCE_MAX_LENGTH
-    celery_logger.info("\nInitializing bogo_main with:\nsequence step: {}\nlast sequence length: {}\n".format(step, max_length))
+    celery_logger.info("Initializing bogo_main with:\nsequence step: {}\nlast sequence length: {}".format(step, max_length))
     previous_state = get_previous_state_all()
 
     if previous_state:
