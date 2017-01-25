@@ -423,6 +423,48 @@ class Test(unittest.TestCase):
         )
 
 
+    # @given(bogo_id=DATABASE_ID_INTEGERS)
+    # def test_get_adjacent_bogos_empty_database(self, bogo_id):
+    #     with main.flask_app.app_context():
+    #         with self.assertRaisesRegex(RuntimeError, "Cannot retrieve adjacent bogos for bogo {}".format(bogo_id)):
+    #             main.get_adjacent_bogos(bogo_id)
+
+
+
+    @given(xs_stream=STREAM_LIST_RANGE_INTEGERS,
+           count_and_id=_integer_and_less())
+    def test_get_adjacent_bogos(self, xs_stream, count_and_id):
+        list_count, bogo_id = count_and_id
+        for i, xs in enumerate(xs_stream):
+            if i >= list_count:
+                break
+            self._insert_bogo(xs)
+
+        with main.flask_app.app_context():
+            prev_bogo, this_bogo, next_bogo = main.get_adjacent_bogos(bogo_id)
+
+        self.assertIsNotNone(
+            this_bogo,
+            "get_adjacent_bogos_or_404 should return the bogo given as parameter when it exists."
+        )
+        if prev_bogo:
+            self.assertLess(
+                prev_bogo['started'],
+                this_bogo['started'],
+                "Previous bogo should not be started after this bogo."
+            )
+        if next_bogo:
+            self.assertLess(
+                this_bogo['started'],
+                next_bogo['started'],
+                "Next bogo should not be started before this bogo."
+            )
+
+        # Hypothesis runs examples on same test case instance
+        self.tearDown()
+        self.setUp()
+
+
     @unittest.skip("not implemented")
     def test_bogo_starts_on_command(self):
         self.fail("not implemented")
