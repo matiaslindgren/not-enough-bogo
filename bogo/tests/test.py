@@ -74,6 +74,47 @@ class Test(unittest.TestCase):
         self.random = random.Random()
 
 
+    def _assert404(self, function, args, msg):
+        with self.assertRaisesRegex(werkzeug.exceptions.NotFound, "404", msg=msg):
+            function(*args)
+
+    def _insert_bogo(self, xs):
+        with main.flask_app.app_context():
+            db = main.get_db()
+            insert_query = "insert into bogos (sequence_length, started) values (?, ?)"
+            db.execute(insert_query, (len(xs), datetime.datetime.utcnow()))
+            db.commit()
+
+    def _backup_and_retrieve(self, xs):
+        with main.flask_app.app_context():
+            main.backup_sorting_state(xs, self.random)
+            return main.get_previous_state_all()
+
+    def _get_stringio_logger(self):
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        stringio = io.StringIO()
+        logger.addHandler(logging.StreamHandler(stringio))
+        return logger, stringio
+
+    def _assertFunctionLogs(self, function, args, logger_name, patterns):
+        mock_logger, stringio = self._get_stringio_logger()
+
+        with mock.patch(logger_name, mock_logger):
+            with main.flask_app.app_context():
+                function(*args)
+
+        stringio.seek(0)
+        for log_line, pattern in zip(stringio, patterns):
+            self.assertRegex(log_line, pattern)
+
+    def _get_newest_bogo(self):
+        with main.flask_app.app_context():
+            db = main.get_db()
+            fetch_query = "select * from bogos order by id desc"
+            return db.execute(fetch_query).fetchone()
+
+
     @given(xs=LIST_RANGE_INTEGERS_SORTED)
     def test_normalized_messiness_sorted(self, xs):
         with main.flask_app.app_context():
@@ -194,12 +235,6 @@ class Test(unittest.TestCase):
         )
 
 
-    def _backup_and_retrieve(self, xs):
-        with main.flask_app.app_context():
-            main.backup_sorting_state(xs, self.random)
-            return main.get_previous_state_all()
-
-
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_backup_sorting_state_sequence_is_intact(self, xs):
         backup = self._backup_and_retrieve(xs)
@@ -265,25 +300,6 @@ class Test(unittest.TestCase):
         self.assertTrue(is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
-    def _get_stringio_logger(self):
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-        stringio = io.StringIO()
-        logger.addHandler(logging.StreamHandler(stringio))
-        return logger, stringio
-
-    def _assertFunctionLogs(self, function, args, logger_name, patterns):
-        mock_logger, stringio = self._get_stringio_logger()
-
-        with mock.patch(logger_name, mock_logger):
-            with main.flask_app.app_context():
-                function(*args)
-
-        stringio.seek(0)
-        for log_line, pattern in zip(stringio, patterns):
-            self.assertRegex(log_line, pattern)
-
-
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_logs_correctly(self, xs):
         expected_patterns = (
@@ -303,13 +319,6 @@ class Test(unittest.TestCase):
             logger_name="bogo.main.celery_logger",
             patterns=expected_patterns
         )
-
-    def _get_newest_bogo(self):
-        with main.flask_app.app_context():
-            db = main.get_db()
-            fetch_query = "select * from bogos order by id desc"
-            return db.execute(fetch_query).fetchone()
-
 
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_creates_a_new_bogo(self, xs):
