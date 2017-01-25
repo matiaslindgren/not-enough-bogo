@@ -52,7 +52,7 @@
           <ul class="pager">
             {% if page.previous %}
             <li class="previous">
-              <a href="{{ url_for('bogo', page.previous) }}"><span aria-hidden="true">&larr;</span> Older</a>
+              <a href="{{ url_for('view_bogo', bogo_id=page.previous) }}"><span aria-hidden="true">&larr;</span> Older</a>
             </li>
             {% else %}
             <li class="previous disabled">
@@ -62,7 +62,7 @@
 
             {% if page.next %}
             <li class="next">
-              <a href="{{ url_for('bogo', page.next) }}">Newer <span aria-hidden="true">&larr;</span></a>
+              <a href="{{ url_for('view_bogo', bogo_id=page.next) }}">Newer <span aria-hidden="true">&rarr;</span></a>
             </li>
             {% else %}
             <li class="next disabled">

@@ -97,12 +97,15 @@ def history():
 
 @flask_app.route("/bogo/<int:bogo_id>")
 def view_bogo(bogo_id):
-    prev_id, _, next_id = get_adjacent_bogos(bogo_id)
+    prev_bogo, _, next_bogo = get_adjacent_bogos(bogo_id)
     render_context = {
         "bogo_stats_url": flask.request.base_url + "/statistics.json",
         "start_date": redis_app.get('start_date'),
         "sequence_length": redis_app.get('sequence_length'),
-        "page": { "previous": prev_id, "next": next_id }
+        "page": {
+            "previous": prev_bogo['id'] if prev_bogo else None,
+            "next": next_bogo['id'] if next_bogo else None
+        }
     }
     return flask.render_template('index.html', **render_context)
 
