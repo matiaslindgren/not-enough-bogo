@@ -305,12 +305,12 @@ class Test(unittest.TestCase):
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_logs_correctly(self, xs):
         expected_patterns = (
+            r"^Writing backup for bogo \d+",
             "^Begin bogosorting with:",
             re.escape("sequence: {}".format(str(xs))),
             r"^bogo id: \d+",
             "^backup interval: {}".format(config.BACKUP_INTERVAL),
             "^iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
-            r"^Writing backup for bogo \d+",
             r"^Done sorting bogo \d+ in \d+ iterations.",
             r"^Bogo \d+ closed.",
             "^Flush.*redis"
