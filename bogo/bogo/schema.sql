@@ -6,14 +6,6 @@ create table bogos (
   finished        date
 );
 
-drop table if exists iterations;
-create table iterations (
-  id          integer primary key,
-  bogo        integer not null,
-  messiness   integer not null,
-  foreign key(bogo) references bogos(id)
-);
-
 drop table if exists backups;
 create table backups (
   id            integer primary key autoincrement,
