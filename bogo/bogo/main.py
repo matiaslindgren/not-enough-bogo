@@ -268,11 +268,26 @@ def get_bogo_by_id(bogo_id):
 
 
 def get_previous_state_all():
-    return execute_and_fetch_one("select * from backups order by id desc")
+    return execute_and_fetch_one("select * from backups order by saved desc")
+
+def get_newest_bogo():
+    return execute_and_fetch_one("select * from bogos order by started desc")
+
+def get_older_bogo(bogo):
+    select_previous = "select * from bogos where started < ? order by started desc limit 1"
+    return execute_and_fetch_one(select_previous, (bogo['started'], ))
+
+def get_newer_bogo(bogo):
+    select_next = "select * from bogos where started > ? order by started limit 1"
+    return execute_and_fetch_one(select_next, (bogo['started'], ))
 
 
-def get_newest_bogo_id():
-    return execute_and_fetch_one("select id from bogos order by id desc")
+def get_adjacent_bogos(bogo_id):
+    this_bogo = get_bogo_by_id(bogo_id)
+    if not this_bogo:
+        raise RuntimeError("Cannot retrieve adjacent bogos for bogo {} which is not in the database.".format(bogo_id))
+    return get_older_bogo(this_bogo), this_bogo, get_newer_bogo(this_bogo)
+
 
 
 def create_new_bogo(sequence):
