@@ -1,5 +1,5 @@
 
-BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+BROKER_URL = 'redis://localhost:6379/0'
 
 REDIS_PORT = '6379'
 REDIS_DECODE_RESPONSES = True
