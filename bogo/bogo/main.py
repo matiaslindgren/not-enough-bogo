@@ -78,7 +78,10 @@ def index():
     bogo_id = get_active_bogo_id()
     if not bogo_id:
         print("WARNING: no active bogo in redis cache!")
-        bogo_id = get_newest_bogo_id()
+        bogo = get_newest_bogo()
+        if not bogo or 'id' not in bogo:
+            flask.abort(404)
+        bogo_id = bogo['id']
     return flask.redirect(flask.url_for("view_bogo", bogo_id=bogo_id))
 
 
