@@ -219,15 +219,15 @@ class Test(unittest.TestCase):
             )
 
 
-    def test_sort_until_done_sorts_unsorted_sequence(self):
-        xs = [3, 2, 1]
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_sort_until_done_sorts_unsorted_sequence(self, xs):
         with main.flask_app.app_context():
             main.sort_until_done(xs)
         self.assertTrue(is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
-    def test_sort_until_done_logs_correctly(self):
-        xs = [3, 2, 1]
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_sort_until_done_logs_correctly(self, xs):
         expected_patterns = (
             "Begin bogosorting with:",
             re.escape("sequence: {}".format(str(xs))),
@@ -238,16 +238,68 @@ class Test(unittest.TestCase):
             r"Bogo \d+ closed.",
             "Flush.*redis"
         )
-        stringio = io.StringIO()
+
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
+        stringio = io.StringIO()
         logger.addHandler(logging.StreamHandler(stringio))
+
         with mock.patch("bogo.main.celery_logger", logger):
             with main.flask_app.app_context():
                 main.sort_until_done(xs)
-        log_string = stringio.getvalue()
-        for pattern, log_line in zip(expected_patterns, log_string.splitlines()):
+
+        stringio.seek(0)
+        for pattern, log_line in zip(expected_patterns, stringio):
             self.assertRegex(log_line, pattern)
+
+
+    def _get_newest_bogo(self):
+        with main.flask_app.app_context():
+            db = main.get_db()
+            fetch_query = "select * from bogos order by id desc"
+            return db.execute(fetch_query).fetchone()
+
+
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_sort_until_done_creates_a_new_bogo(self, xs):
+        newest_before = self._get_newest_bogo()
+
+        with main.flask_app.app_context():
+            main.sort_until_done(xs)
+
+        newest_after = self._get_newest_bogo()
+
+        self.assertIsNotNone(
+            newest_after,
+            "sort_until_done did not insert a new bogo."
+        )
+        if newest_before:
+            self.assertNotEqual(
+                newest_before['id'],
+                newest_after['id'],
+                "sort_until_done did not insert a new bogo."
+            )
+
+
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_sort_until_done_closes_the_created_bogo(self, xs):
+        before_sort = datetime.datetime.utcnow()
+        with main.flask_app.app_context():
+            main.sort_until_done(xs)
+
+        newest_bogo = self._get_newest_bogo()
+        finished_date = newest_bogo['finished']
+
+        self.assertIsNotNone(
+            finished_date,
+            "After sort_until_done, the newest bogo should be closed."
+        )
+
+        self.assertLess(
+            date_parser.parse(finished_date) - before_sort,
+            datetime.timedelta(seconds=5),
+            "Timedelta between the time at starting sort_until_done the time it was finished was greater than 5 seconds (when the sequence being sorted was of length {}).".format(len(xs))
+        )
 
 
 
