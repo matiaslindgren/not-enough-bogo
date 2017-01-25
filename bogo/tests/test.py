@@ -30,7 +30,14 @@ def is_sorted(xs):
     return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
 
 
-@mock.patch('bogo.main.redis_app', fakeredis.FakeStrictRedis())
+mock_redis_app = fakeredis.FakeStrictRedis(
+    host="localhost",
+    port=config.REDIS_PORT,
+    db=0,
+    decode_responses=config.REDIS_DECODE_RESPONSES
+)
+
+@mock.patch('bogo.main.redis_app', mock_redis_app)
 class Test(unittest.TestCase):
 
     # range(1, n) instances where 2 <= n <= 3000 is random
