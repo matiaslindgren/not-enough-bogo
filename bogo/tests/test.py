@@ -33,11 +33,17 @@ def is_sorted(xs):
 @mock.patch('bogo.main.redis_app', fakeredis.FakeStrictRedis())
 class Test(unittest.TestCase):
 
+    # range(1, n) instances where 2 <= n <= 3000 is random
     RANGE_FROM_ONE = strategies.builds(
             lambda n: range(1, n),
             strategies.integers(min_value=2, max_value=3000))
+    # list instances from above ranges
     LIST_RANGE_INTEGERS_SORTED = RANGE_FROM_ONE.map(list)
+    # random.sample lists using above ranges as population and size
     LIST_RANGE_INTEGERS_SHUFFLED = RANGE_FROM_ONE.map(lambda rng: random.sample(rng, len(rng)))
+    # [1, 2, 3] instances with elements in random order
+    LIST_THREE_INTEGERS_SHUFFLED = strategies.builds(lambda: random.sample(range(1, 4), 3))
+
     SQL_MAX_INT = 2**63-1
 
 
