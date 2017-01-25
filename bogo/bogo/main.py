@@ -138,18 +138,27 @@ def all_sequences(start, step, max_length):
     return (list(reversed(range(1, n))) for n in seq_upper_limits)
 
 
-def sort_until_done(sequence):
+# TODO: rethink the duties of this function and bogo_main, who
+# should write the bogos and how to restart backups?
+def sort_until_done(sequence, from_backup=False):
     """
     Bogosort sequence until it is sorted.
     Writes iterations to the database.
     Writes backups of the sorting state at BACKUP_INTERVAL iterations.
     """
-    this_bogo_id = create_new_bogo(sequence)
+    if from_backup:
+        bogo = get_newest_bogo()
+        if not bogo or not bogo['id']:
+            raise RuntimeError("Attempted to restart from backup but get_newest_bogo returned {}.".format(tuple(bogo)))
+        this_bogo_id = bogo['id']
+        celery_logger.info('Sorting a backup, fetched the id {} from the database.'.format(this_bogo_id))
+    else:
+        this_bogo_id = create_new_bogo(sequence)
+        celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
+        backup_sorting_state(sequence, bogo_random)
+
     backup_interval = config.BACKUP_INTERVAL
     iter_speed_resolution = config.ITER_SPEED_RESOLUTION
-
-    celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
-    backup_sorting_state(sequence, bogo_random)
 
     celery_logger.info('Begin bogosorting with:\nsequence: {}\nbogo id: {}\nbackup interval: {}\niter speed resolution: {}.'.format(sequence, this_bogo_id, backup_interval, iter_speed_resolution))
 
@@ -205,13 +214,17 @@ def bogo_main():
         previous_seq = ast.literal_eval(previous_state['sequence'])
         celery_logger.info("Previous backup found, seq of len {}".format(len(previous_seq)))
         next_seq_len = step + 1 + len(previous_seq)
-        not_yet_sorted = itertools.chain((previous_seq, ), all_sequences(next_seq_len, step, max_length))
         previous_random = ast.literal_eval(previous_state['random_state'])
         bogo_random.setstate(previous_random)
+
+        celery_logger.info("Resuming sorting with backup: {}".format(previous_seq))
+        sort_until_done(previous_seq, from_backup=True)
+        celery_logger.info("Backup sequence sorted: {}".format(previous_seq))
     else:
         celery_logger.info("No backups found, starting a new bogo cycle.")
         next_seq_len = step + 1
-        not_yet_sorted = all_sequences(next_seq_len, step, max_length)
+
+    not_yet_sorted = all_sequences(next_seq_len, step, max_length)
 
     for seq in not_yet_sorted:
         celery_logger.info("Call sort_until_done with: {}".format(seq))

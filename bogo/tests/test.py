@@ -435,6 +435,7 @@ class Test(unittest.TestCase):
     @mock.patch("bogo.config.SEQUENCE_STEP", 3)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_bogo_main_starts_from_correct_backup(self, xs):
+        self._insert_bogo(xs)
         backup = self._backup_and_retrieve(xs)
         backup_seq = ast.literal_eval(backup['sequence'])
         expected_patterns = (
@@ -442,7 +443,7 @@ class Test(unittest.TestCase):
             "^.",
             "^.",
             "^" + re.escape("Previous backup found, seq of len {}".format(len(backup_seq))),
-            "^" + re.escape("Call sort_until_done with: {}".format(backup_seq))
+            "^" + re.escape("Resuming sorting with backup: {}".format(backup_seq))
         )
         self._assertFunctionLogs(
             main.bogo_main,
