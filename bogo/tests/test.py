@@ -29,6 +29,12 @@ settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', default='dev'))
 def is_sorted(xs):
     return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
 
+@strategies.composite
+def _integer_and_less(draw):
+    n = draw(strategies.integers(min_value=1, max_value=20))
+    i = draw(strategies.integers(min_value=1, max_value=n))
+    return (n, i)
+
 
 mock_redis_app = fakeredis.FakeStrictRedis(
     host="localhost",
@@ -50,9 +56,11 @@ class Test(unittest.TestCase):
     LIST_RANGE_INTEGERS_SHUFFLED = RANGE_FROM_ONE.map(lambda rng: random.sample(rng, len(rng)))
     # [1, 2, 3] instances with elements in random order
     LIST_THREE_INTEGERS_SHUFFLED = strategies.builds(lambda: random.sample(range(1, 4), 3))
+    # Infinite iterator of above shuffled lists
+    STREAM_LIST_RANGE_INTEGERS = strategies.streaming(LIST_RANGE_INTEGERS_SHUFFLED)
 
     SQL_MAX_INT = 2**63-1
-
+    DATABASE_ID_INTEGERS = strategies.integers(min_value=1, max_value=SQL_MAX_INT)
 
     def setUp(self):
         self.db_file_desc, main.flask_app.config['DATABASE'] = tempfile.mkstemp()
