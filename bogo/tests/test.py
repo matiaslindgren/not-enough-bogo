@@ -104,8 +104,8 @@ class Test(unittest.TestCase):
         time_delta = db_date - before_insert
         self.assertLess(
             time_delta,
-            datetime.timedelta(seconds=10),
-            "Timedelta between the time at saving a new bogo and the time stored in the database was greater than 10 seconds."
+            datetime.timedelta(seconds=5),
+            "Timedelta between the time at saving a new bogo and the time stored in the database was greater than 5 seconds."
         )
 
 
@@ -178,8 +178,8 @@ class Test(unittest.TestCase):
         time_delta = date_parser.parse(backup['saved']) - before_insert
         self.assertLess(
             time_delta,
-            datetime.timedelta(seconds=10),
-            "Timedelta between the time at saving a backup and the time stored in the database was greater than 10 seconds."
+            datetime.timedelta(seconds=5),
+            "Timedelta between the time at saving a backup and the time stored in the database was greater than 5 seconds."
         )
 
 
