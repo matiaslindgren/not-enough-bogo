@@ -81,6 +81,10 @@ function generateActiveName() {
     "while occasionally sipping cheap red wine",
     "furiously",
     "with white shores and green fields in mind",
+    "and thinking of tomorrow",
+    "platonically",
+    "with utmost haste",
+    "whilst questioning the meaning of all this"
   ];
  return "Bogosorting " + states[Math.floor(Math.random()*states.length)];
 }
