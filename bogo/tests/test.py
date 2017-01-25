@@ -74,10 +74,6 @@ class Test(unittest.TestCase):
         self.random = random.Random()
 
 
-    def _assert404(self, function, args, msg):
-        with self.assertRaisesRegex(werkzeug.exceptions.NotFound, "404", msg=msg):
-            function(*args)
-
     def _insert_bogo(self, xs):
         with main.flask_app.app_context():
             db = main.get_db()
@@ -454,14 +450,6 @@ class Test(unittest.TestCase):
             logger_name="bogo.main.celery_logger",
             patterns=expected_patterns
         )
-
-
-    # @given(bogo_id=DATABASE_ID_INTEGERS)
-    # def test_get_adjacent_bogos_empty_database(self, bogo_id):
-    #     with main.flask_app.app_context():
-    #         with self.assertRaisesRegex(RuntimeError, "Cannot retrieve adjacent bogos for bogo {}".format(bogo_id)):
-    #             main.get_adjacent_bogos(bogo_id)
-
 
 
     @given(xs_stream=STREAM_LIST_RANGE_INTEGERS,
