@@ -147,10 +147,14 @@ def sort_until_done(sequence):
 
     celery_logger.info('Begin bogosorting with:\nsequence: {}\nbogo id: {}\nbackup interval: {}\niter speed resolution: {}.'.format(sequence, this_bogo_id, backup_interval, iter_speed_resolution))
 
+    celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
+    backup_sorting_state(sequence, bogo_random)
+
     messiness = normalized_messiness(sequence)
     iteration = 0
     total_iterations = 0
     cycle_total_time = 0.0
+
 
     while messiness > 0:
         begin_time = time.perf_counter()

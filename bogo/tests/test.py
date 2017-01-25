@@ -111,7 +111,13 @@ class Test(unittest.TestCase):
     def _get_newest_bogo(self):
         with main.flask_app.app_context():
             db = main.get_db()
-            fetch_query = "select * from bogos order by id desc"
+            fetch_query = "select * from bogos order by started desc"
+            return db.execute(fetch_query).fetchone()
+
+    def _get_newest_backup(self):
+        with main.flask_app.app_context():
+            db = main.get_db()
+            fetch_query = "select * from backups order by saved desc"
             return db.execute(fetch_query).fetchone()
 
 
@@ -308,6 +314,7 @@ class Test(unittest.TestCase):
             r"^bogo id: \d+",
             "^backup interval: {}".format(config.BACKUP_INTERVAL),
             "^iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
+            r"^Writing backup for bogo \d+",
             r"^Done sorting bogo \d+ in \d+ iterations.",
             r"^Bogo \d+ closed.",
             "^Flush.*redis"
@@ -340,6 +347,32 @@ class Test(unittest.TestCase):
                 "sort_until_done did not insert a new bogo."
             )
 
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_sort_until_done_creates_a_backup(self, xs):
+        date_before = datetime.datetime.utcnow()
+
+        with mock.patch("bogo.main.bogo_random", self.random):
+            self.random.seed(config.RANDOM_SEED)
+            random_state_before = self.random.getstate()
+            with main.flask_app.app_context():
+                main.sort_until_done(xs)
+
+        newest_backup_after = self._get_newest_backup()
+
+        self.assertIsNotNone(
+            newest_backup_after,
+            "sort_until_done did not create a backup."
+        )
+        self.assertTupleEqual(
+            ast.literal_eval(newest_backup_after['random_state']),
+            random_state_before,
+            "sort_until_done saved a backup but the random state was not the same as before saving the backup."
+        )
+        self.assertLess(
+            date_parser.parse(newest_backup_after['saved']) - date_before,
+            datetime.timedelta(seconds=5),
+            "The timedelta of right before calling sort_until_done, compared to the saved date in the newest backup was greater than 5 seconds."
+        )
 
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_closes_the_created_bogo(self, xs):
