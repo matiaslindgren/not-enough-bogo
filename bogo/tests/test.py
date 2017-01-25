@@ -151,6 +151,38 @@
             )
 
 
+    def test_sort_until_done_sorts_unsorted_sequence(self):
+        xs = [3, 2, 1]
+        with main.flask_app.app_context():
+            main.sort_until_done(xs)
+        self.assertTrue(is_sorted(xs), "Bogosorting did not sort the sequence.")
+
+
+    def test_sort_until_done_logs_correctly(self):
+        xs = [3, 2, 1]
+        expected_patterns = (
+            "Begin bogosorting with:",
+            re.escape("sequence: {}".format(str(xs))),
+            r"bogo id: \d+",
+            "backup interval: {}".format(config.BACKUP_INTERVAL),
+            "iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
+            r"Done sorting bogo \d+ in \d+ iterations.",
+            r"Bogo \d+ closed.",
+            "Flush.*redis"
+        )
+        stringio = io.StringIO()
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(logging.StreamHandler(stringio))
+        with mock.patch("bogo.main.celery_logger", logger):
+            with main.flask_app.app_context():
+                main.sort_until_done(xs)
+        log_string = stringio.getvalue()
+        for pattern, log_line in zip(expected_patterns, log_string.splitlines()):
+            self.assertRegex(log_line, pattern)
+
+
+
     @unittest.skip("not implemented")
     def test_bogo_main_starts_from_correct_backup(self):
         self.fail("not implemented")
