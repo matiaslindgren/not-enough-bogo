@@ -115,6 +115,30 @@ class Test(unittest.TestCase):
             "Timedelta between the time at saving a new bogo and the time stored in the database was greater than 5 seconds."
         )
 
+        redis_key_not_set_msg = "create_new_bogo did not update the redis cache."
+        with main.flask_app.app_context():
+            self.assertEqual(
+                str(bogo_id),
+                main.redis_app.get("active_bogo_id"),
+                redis_key_not_set_msg
+            )
+            self.assertEqual(
+                str(len(xs)),
+                main.redis_app.get("sequence_length"),
+                redis_key_not_set_msg
+            )
+            self.assertEqual(
+                db_date.isoformat(),
+                main.redis_app.get("start_date"),
+                redis_key_not_set_msg
+            )
+            self.assertEqual(
+                "0",
+                main.redis_app.get("iter_speed"),
+                redis_key_not_set_msg
+            )
+
+
 
     @given(bogo_id=strategies.integers(min_value=1, max_value=SQL_MAX_INT))
     def test_close_non_existing_bogo(self, bogo_id):
@@ -233,32 +257,44 @@ class Test(unittest.TestCase):
         self.assertTrue(is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
-    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_sort_until_done_logs_correctly(self, xs):
-        expected_patterns = (
-            "Begin bogosorting with:",
-            re.escape("sequence: {}".format(str(xs))),
-            r"bogo id: \d+",
-            "backup interval: {}".format(config.BACKUP_INTERVAL),
-            "iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
-            r"Done sorting bogo \d+ in \d+ iterations.",
-            r"Bogo \d+ closed.",
-            "Flush.*redis"
-        )
-
+    def _get_stringio_logger(self):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
         stringio = io.StringIO()
         logger.addHandler(logging.StreamHandler(stringio))
+        return logger, stringio
 
-        with mock.patch("bogo.main.celery_logger", logger):
+    def _assertFunctionLogs(self, function, args, logger_name, patterns):
+        mock_logger, stringio = self._get_stringio_logger()
+
+        with mock.patch(logger_name, mock_logger):
             with main.flask_app.app_context():
-                main.sort_until_done(xs)
+                function(*args)
 
         stringio.seek(0)
-        for pattern, log_line in zip(expected_patterns, stringio):
+        for log_line, pattern in zip(stringio, patterns):
             self.assertRegex(log_line, pattern)
 
+
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_sort_until_done_logs_correctly(self, xs):
+        expected_patterns = (
+            "^Begin bogosorting with:",
+            re.escape("sequence: {}".format(str(xs))),
+            r"^bogo id: \d+",
+            "^backup interval: {}".format(config.BACKUP_INTERVAL),
+            "^iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
+            r"^Done sorting bogo \d+ in \d+ iterations.",
+            r"^Bogo \d+ closed.",
+            "^Flush.*redis"
+        )
+
+        self._assertFunctionLogs(
+            main.sort_until_done,
+            (xs, ),
+            logger_name="bogo.main.celery_logger",
+            patterns=expected_patterns
+        )
 
     def _get_newest_bogo(self):
         with main.flask_app.app_context():
@@ -310,13 +346,65 @@ class Test(unittest.TestCase):
 
 
 
-    @unittest.skip("not implemented")
-    def test_bogo_main_starts_from_correct_backup(self):
-        self.fail("not implemented")
+    @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
+    @mock.patch("bogo.config.SEQUENCE_STEP", 3)
+    def test_bogo_main_initializes_from_config(self):
+        mock_step = mock_max_length = 3
+        expected_seq = [3, 2, 1]
+        expected_patterns = (
+            "^Initializing bogo_main with:",
+            "sequence step: {}".format(mock_step),
+            "last sequence length: {}".format(mock_max_length),
+            "backups? found",
+            "^" + re.escape("Call sort_until_done with: {}".format(expected_seq))
+        )
+        self._assertFunctionLogs(
+            main.bogo_main,
+            (),
+            logger_name="bogo.main.celery_logger",
+            patterns=expected_patterns
+        )
 
-    @unittest.skip("not implemented")
-    def test_bogo_main_starts_from_new_sequence_if_no_backups_exit(self):
-        self.fail("not implemented")
+
+    @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
+    @mock.patch("bogo.config.SEQUENCE_STEP", 3)
+    def test_bogo_main_starts_from_new_sequence_if_no_backups_exist(self):
+        expected_seq = [3, 2, 1]
+        expected_patterns = (
+            "^.",
+            "^.",
+            "^.",
+            "^No backups found, starting a new bogo cycle.",
+            "^" + re.escape("Call sort_until_done with: {}".format(expected_seq))
+        )
+        self._assertFunctionLogs(
+            main.bogo_main,
+            (),
+            logger_name="bogo.main.celery_logger",
+            patterns=expected_patterns
+        )
+
+
+    @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
+    @mock.patch("bogo.config.SEQUENCE_STEP", 3)
+    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    def test_bogo_main_starts_from_correct_backup(self, xs):
+        backup = self._backup_and_retrieve(xs)
+        backup_seq = ast.literal_eval(backup['sequence'])
+        expected_patterns = (
+            "^.",
+            "^.",
+            "^.",
+            "^" + re.escape("Previous backup found, seq of len {}".format(len(backup_seq))),
+            "^" + re.escape("Call sort_until_done with: {}".format(backup_seq))
+        )
+        self._assertFunctionLogs(
+            main.bogo_main,
+            (),
+            logger_name="bogo.main.celery_logger",
+            patterns=expected_patterns
+        )
+
 
     @unittest.skip("not implemented")
     def test_bogo_starts_on_command(self):
