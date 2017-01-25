@@ -48,31 +48,33 @@
         <b>The body_content block was not overridden</b>
         {% endblock %}
 
-        <nav aria-label="...">
-          <ul class="pager">
-            {% if page.previous %}
-            <li class="previous">
-              <a href="{{ url_for('view_bogo', bogo_id=page.previous) }}"><span aria-hidden="true">&larr;</span> Older</a>
-            </li>
-            {% else %}
-            <li class="previous disabled">
-              <a href="#"><span aria-hidden="true">&larr;</span> Older</a>
-            </li>
-            {% endif %}
+        <div class="container">
+          <nav aria-label="...">
+            <ul class="pager">
+              {% if page.previous %}
+              <li class="previous">
+                <a href="{{ url_for('view_bogo', bogo_id=page.previous) }}"><span aria-hidden="true">&larr;</span> Older</a>
+              </li>
+              {% else %}
+              <li class="previous disabled">
+                <a href="#"><span aria-hidden="true">&larr;</span> Older</a>
+              </li>
+              {% endif %}
 
-            {% if page.next %}
-            <li class="next">
-              <a href="{{ url_for('view_bogo', bogo_id=page.next) }}">Newer <span aria-hidden="true">&rarr;</span></a>
-            </li>
-            {% else %}
-            <li class="next disabled">
-              <a href="#">Newer <span aria-hidden="true">&larr;</span></a>
-            </li>
-            {% endif %}
-          </ul>
-        </nav>
-
+              {% if page.next %}
+              <li class="next">
+                <a href="{{ url_for('view_bogo', bogo_id=page.next) }}">Newer <span aria-hidden="true">&rarr;</span></a>
+              </li>
+              {% else %}
+              <li class="next disabled">
+                <a href="#">Newer <span aria-hidden="true">&larr;</span></a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
         </div>
+
+      </div>
 
         <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>

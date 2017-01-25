@@ -60,8 +60,12 @@ textarea {
   margin-bottom: 20px;
 }
 
-#react-root .table {
-  max-width: 600px;
+.body-container {
+  max-width: 700px;
+}
+
+.body-container * {
+  max-width: inherit;
 }
 
 
