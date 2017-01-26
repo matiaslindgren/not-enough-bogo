@@ -6,7 +6,7 @@ class Bogo extends React.Component {
     super(props);
     this.state = {
       stateName:    "Loading...",
-      endDate: "Maybe some day",
+      endDate:      "Loading...",
       currentSpeed: "Loading..."
     };
   }
@@ -43,6 +43,7 @@ class Bogo extends React.Component {
       else {
         changedState = {
           stateName: this.props.activeName,
+          endDate: "Maybe some day",
           currentSpeed: Math.round(data.currentSpeed) + " shuffles per second"
         }
       }
@@ -53,11 +54,16 @@ class Bogo extends React.Component {
 
   render() {
     return (
-      <Table stateName={this.state.stateName}
-             startDate={this.props.startDate}
-             endDate={this.state.endDate}
-             sequenceLength={this.props.sequenceLength}
-             currentSpeed={this.state.currentSpeed} />
+      <div>
+        <Animation />
+        <Table stateName={this.state.stateName}
+               startDate={this.props.startDate}
+               endDate={this.state.endDate}
+               sequenceLength={this.props.sequenceLength}
+               currentSpeed={this.state.currentSpeed} />
+        <Pager previousUrl={this.props.previousUrl}
+               nextUrl={this.props.nextUrl}/>
+      </div>
     );
   }
 }
@@ -91,36 +97,36 @@ function Row(props) {
 }
 
 
-// TODO
+class Animation extends React.Component {
+  render() {
+    return (
+
+
+
+    );
+  }
+}
+
+
 function Pager(props) {
   return (
     <div className="container">
       <nav aria-label="...">
         <ul className="pager">
-          {% if page.previous %}
-          <li class="previous">
-            <a href="{{ url_for('view_bogo', bogo_id=page.previous) }}"><span aria-hidden="true">&larr;</span> Older</a>
-          </li>
-          {% else %}
-          <li class="previous disabled">
-            <a href="#"><span aria-hidden="true">&larr;</span> Older</a>
-          </li>
-          {% endif %}
-
-          {% if page.next %}
-          <li class="next">
-            <a href="{{ url_for('view_bogo', bogo_id=page.next) }}">Newer <span aria-hidden="true">&rarr;</span></a>
-          </li>
-          {% else %}
-          <li class="next disabled">
-            <a href="#">Newer <span aria-hidden="true">&larr;</span></a>
-          </li>
-          {% endif %}
+          {props.previousUrl.length > 0 &&
+            <li className="previous">
+              <a href={props.previousUrl}><span aria-hidden="true">&larr;</span> Older</a>
+            </li>}
+          {props.nextUrl.length > 0 &&
+            <li className="next">
+              <a href={props.nextUrl}>Newer <span aria-hidden="true">&rarr;</span></a>
+            </li>}
         </ul>
       </nav>
     </div>
   );
 }
+
 
 function generateActiveName() {
   const states = [
@@ -151,6 +157,8 @@ ReactDOM.render(
   <Bogo updateApiUrl={STATIC_DATA["bogoStatsUrl"]}
         startDate={STATIC_DATA['startDate']}
         activeName={generateActiveName()}
-        sequenceLength={STATIC_DATA['sequenceLength']}/>,
+        sequenceLength={STATIC_DATA['sequenceLength']}
+        previousUrl={STATIC_DATA['previousUrl']}
+        nextUrl={STATIC_DATA['nextUrl']}/>,
   document.getElementById('react-root')
 );

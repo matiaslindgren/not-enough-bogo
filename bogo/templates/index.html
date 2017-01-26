@@ -1,14 +1,36 @@
 {% extends "layout.html" %}
-{% block statistics_content %}
+{% block body_content %}
 
-<script id="bogo-data-api" type="application/json">
-{ "bogoStatsUrl": "{{ bogo_stats_url }}",
-  "startDate": "{{ start_date }}",
-  "sequenceLength": "{{ sequence_length }}" }
-</script>
+<div class="container" id="body-container">
 
-<div class="container">
-  <div id="react-root"></div>
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand active" href="/">
+          <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
+        </a>
+      </div>
+     <ul class="nav navbar-nav">
+       <li><a href="{{ url_for('history') }}">History</a></li>
+       <li><a href="{{ url_for('about') }}">WTF?</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container" id="react-root"></div>
+
+
 </div>
 
-{% endblock %}
+
+
+<script id="bogo-data-api" type="application/json">
+{ "bogoStatsUrl":     "{{ bogo_stats_url }}",
+  "startDate":        "{{ start_date }}",
+  "sequenceLength":   "{{ sequence_length }}",
+  "previousUrl":      "{{ previous_url }}",
+  "nextUrl":          "{{ next_url }}"
+  }
+</script>
+
+{% endblock body_content %}
