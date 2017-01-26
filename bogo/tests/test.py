@@ -4,6 +4,7 @@ Tests written using the property based testing library hypothesis.
 import unittest
 import unittest.mock as mock
 import fakeredis
+import werkzeug
 from hypothesis import strategies, given, settings, assume
 import random
 import os
@@ -191,7 +192,7 @@ class Test(unittest.TestCase):
 
 
 
-    @given(bogo_id=strategies.integers(min_value=1, max_value=SQL_MAX_INT))
+    @given(bogo_id=DATABASE_ID_INTEGERS)
     def test_close_non_existing_bogo(self, bogo_id):
         with main.flask_app.app_context():
             with self.assertRaises(RuntimeError, msg="Closing a bogo with a non-existing id should raise a RuntimeError."):
@@ -463,11 +464,12 @@ class Test(unittest.TestCase):
             self._insert_bogo(xs)
 
         with main.flask_app.app_context():
-            prev_bogo, this_bogo, next_bogo = main.get_adjacent_bogos(bogo_id)
+            this_bogo = main.get_bogo_by_id_or_404(bogo_id)
+            prev_bogo, this_bogo, next_bogo = main.get_adjacent_bogos(this_bogo)
 
         self.assertIsNotNone(
             this_bogo,
-            "get_adjacent_bogos_or_404 should return the bogo given as parameter when it exists."
+            "get_adjacent_bogos should return the bogo given as parameter when it exists."
         )
         if prev_bogo:
             self.assertLess(
