@@ -7,12 +7,12 @@ html {
 }
 
 ::-moz-selection {
-    background: #b3d4fc;
+    background: #e2e2e2;
     text-shadow: none;
 }
 
 ::selection {
-    background: #b3d4fc;
+    background: #e2e2e2;
     text-shadow: none;
 }
 
@@ -61,13 +61,29 @@ textarea {
 }
 
 #body-container {
-  max-width: 700px;
+  max-width: 900px;
 }
 
 #body-container * {
-  max-width: inherit;
+  max-width: 100%;
 }
 
+#sketch-container {
+  height: 400px;
+  margin-bottom: 20px;
+}
+
+body a {
+  color: #484848;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+body a:focus,
+body a:hover {
+  color: #0a0a0a;
+  text-decoration: underline;
+}
 
 /* ==========================================================================
    Media Queries
