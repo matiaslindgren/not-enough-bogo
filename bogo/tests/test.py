@@ -489,6 +489,34 @@ class Test(unittest.TestCase):
         self.setUp()
 
 
+    def test_index_route_redirects(self):
+        with main.flask_app.app_context():
+            response = self.app.get('/')
+            self.assertEqual(
+                response.status_code,
+                302,
+                "Index should redirect"
+            )
+
+
+    @given(bogo_id=DATABASE_ID_INTEGERS)
+    def test_nonexisting_route_responds_404(self, bogo_id):
+        with main.flask_app.app_context():
+            response = self.app.get('/bogo/{:d}'.format(bogo_id))
+            self.assertEqual(
+                response.status_code,
+                404,
+                "Getting path with bogo key when the database is empty should 404."
+            )
+
+
+    @given(bogo_id=DATABASE_ID_INTEGERS)
+    def test_get_bogo_by_id_or_404_with_nonexisting_id_throws_404(self, bogo_id):
+        with main.flask_app.app_context():
+            with self.assertRaisesRegex(werkzeug.exceptions.NotFound, "404"):
+                main.get_bogo_by_id_or_404(bogo_id)
+
+
     @unittest.skip("not implemented")
     def test_bogo_starts_on_command(self):
         self.fail("not implemented")
