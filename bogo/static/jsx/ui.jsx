@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-class Statistics extends React.Component {
+class Bogo extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -12,10 +12,10 @@ class Statistics extends React.Component {
 
   componentDidMount() {
     if (this.state.stateName === "Sorted") {
-      // Statistics loaded for page with sorted sequence, don't refresh
       return;
     }
 
+    // TODO the lambda is redundant? test
     this.timerID = setInterval(_ => this.refreshState(), 1000);
   }
 
@@ -24,37 +24,57 @@ class Statistics extends React.Component {
   }
 
   refreshState() {
-    const jsonURL = this.props.jsonURL;
+    const updateApiUrl = this.props.updateApiUrl;
     // Update own state with the current state of the backend
-    $.getJSON(jsonURL, data => {
-      const newState = Object.assign(
-        data,
-        (data.endDate) ?
-          { stateName: "Sorted", currentSpeed: "-" } :
-          { stateName: this.props.activeName, currentSpeed: Math.round(data.currentSpeed) + " shuffles per second" }
-      );
-      this.setState(newState);
+    // A non-null end date signifies the sorting has ended
+    $.getJSON(updateApiUrl, data => {
 
-      if (data.endDate)
+      let changedState;
+
+      if (data.endDate) {
         this.componentWillUnmount();
+        changedState = {
+          stateName: "Sorted",
+          currentSpeed: "-"
+        }
+      }
+      else {
+        changedState = {
+          stateName: this.props.activeName,
+          currentSpeed: Math.round(data.currentSpeed) + " shuffles per second"
+        }
+      }
+
+      this.setState(Object.assign(data, changedState));
     });
   }
 
   render() {
     return (
-      <div>
-        <table className="table table-bordered table-condensed">
-          <tbody>
-            <Row label="State"               value={this.state.stateName} />
-            <Row label="Sorting started at"  value={this.props.startDate} />
-            <Row label="Sorting finished at" value={this.state.endDate} />
-            <Row label="Sequence length"     value={this.props.sequenceLength} />
-            <Row label="Current speed"       value={this.state.currentSpeed} />
-          </tbody>
-        </table>
-      </div>
+      <Table stateName={this.state.stateName}
+             startDate={this.props.startDate}
+             endDate={this.props.endDate}
+             sequenceLength={this.props.sequenceLength}
+             currentSpeed={this.state.currentSpeed} />
     );
   }
+}
+
+
+function Table(props) {
+  return (
+    <div>
+      <table className="table table-bordered table-condensed">
+        <tbody>
+          <Row label="State"               value={props.stateName} />
+          <Row label="Sorting started at"  value={props.startDate} />
+          <Row label="Sorting finished at" value={props.endDate} />
+          <Row label="Sequence length"     value={props.sequenceLength} />
+          <Row label="Current speed"       value={props.currentSpeed} />
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 
@@ -79,12 +99,13 @@ function generateActiveName() {
     "with passion",
     "ironically fast",
     "while occasionally sipping cheap red wine",
-    "furiously",
+    "furiously, angrily even",
     "with white shores and green fields in mind",
     "and thinking of tomorrow",
-    "platonically",
+    "platonically, whatever that means in this context",
     "with utmost haste",
-    "whilst questioning the meaning of all this"
+    "whilst questioning the meaning of all this",
+    "with a tad of melancholy"
   ];
  return "Bogosorting " + states[Math.floor(Math.random()*states.length)];
 }
@@ -93,9 +114,9 @@ function generateActiveName() {
 const STATIC_DATA = JSON.parse($("#bogo-data-api").html());
 
 ReactDOM.render(
-  <Statistics jsonURL={STATIC_DATA["bogoStatsUrl"]}
-              startDate={STATIC_DATA['startDate']}
-              activeName={generateActiveName()}
-              sequenceLength={STATIC_DATA['sequenceLength']}/>,
+  <Bogo updateApiUrl={STATIC_DATA["bogoStatsUrl"]}
+        startDate={STATIC_DATA['startDate']}
+        activeName={generateActiveName()}
+        sequenceLength={STATIC_DATA['sequenceLength']}/>,
   document.getElementById('react-root')
 );
