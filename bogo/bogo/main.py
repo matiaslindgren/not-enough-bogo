@@ -56,7 +56,7 @@ def get_stats(bogo_id):
             "currentSpeed":   ast.literal_eval(redis_app.get("iter_speed"))
         }
     else:
-        bogo_row = get_bogo_by_id(bogo_id)
+        bogo_row = get_bogo_by_id_or_404(bogo_id)
         if bogo_row:
             stats = {
                 "startDate":      bogo_row['started'],
@@ -97,7 +97,8 @@ def history():
 
 @flask_app.route("/bogo/<int:bogo_id>")
 def view_bogo(bogo_id):
-    prev_bogo, _, next_bogo = get_adjacent_bogos(bogo_id)
+    bogo = get_bogo_by_id_or_404(bogo_id)
+    prev_bogo, _, next_bogo = get_adjacent_bogos(bogo)
     render_context = {
         "bogo_stats_url": flask.request.base_url + "/statistics.json",
         "start_date": redis_app.get('start_date'),
@@ -288,8 +289,11 @@ def execute_and_fetch_one(query, args=()):
     return get_db().execute(query, args).fetchone()
 
 
-def get_bogo_by_id(bogo_id):
-    return execute_and_fetch_one("select * from bogos where id=?", (bogo_id, ))
+def get_bogo_by_id_or_404(bogo_id):
+    result = execute_and_fetch_one("select * from bogos where id=?", (bogo_id, ))
+    if not result:
+        flask.abort(404)
+    return result
 
 
 def get_previous_state_all():
@@ -306,12 +310,8 @@ def get_newer_bogo(bogo):
     select_next = "select * from bogos where started > ? order by started limit 1"
     return execute_and_fetch_one(select_next, (bogo['started'], ))
 
-
-def get_adjacent_bogos(bogo_id):
-    this_bogo = get_bogo_by_id(bogo_id)
-    if not this_bogo:
-        raise RuntimeError("Cannot retrieve adjacent bogos for bogo {} which is not in the database.".format(bogo_id))
-    return get_older_bogo(this_bogo), this_bogo, get_newer_bogo(this_bogo)
+def get_adjacent_bogos(bogo):
+    return get_older_bogo(bogo), bogo, get_newer_bogo(bogo)
 
 
 
