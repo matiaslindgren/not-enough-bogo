@@ -6,6 +6,7 @@ class Bogo extends React.Component {
     super(props);
     this.state = {
       stateName:    "Loading...",
+      endDate: "Maybe some day",
       currentSpeed: "Loading..."
     };
   }
@@ -35,6 +36,7 @@ class Bogo extends React.Component {
         this.componentWillUnmount();
         changedState = {
           stateName: "Sorted",
+          endDate: data.endDate,
           currentSpeed: "-"
         }
       }
@@ -53,7 +55,7 @@ class Bogo extends React.Component {
     return (
       <Table stateName={this.state.stateName}
              startDate={this.props.startDate}
-             endDate={this.props.endDate}
+             endDate={this.state.endDate}
              sequenceLength={this.props.sequenceLength}
              currentSpeed={this.state.currentSpeed} />
     );
@@ -62,6 +64,7 @@ class Bogo extends React.Component {
 
 
 function Table(props) {
+  const sortProbability = 0; // tODO
   return (
     <div>
       <table className="table table-bordered table-condensed">
