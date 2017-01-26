@@ -91,6 +91,37 @@ function Row(props) {
 }
 
 
+// TODO
+function Pager(props) {
+  return (
+    <div className="container">
+      <nav aria-label="...">
+        <ul className="pager">
+          {% if page.previous %}
+          <li class="previous">
+            <a href="{{ url_for('view_bogo', bogo_id=page.previous) }}"><span aria-hidden="true">&larr;</span> Older</a>
+          </li>
+          {% else %}
+          <li class="previous disabled">
+            <a href="#"><span aria-hidden="true">&larr;</span> Older</a>
+          </li>
+          {% endif %}
+
+          {% if page.next %}
+          <li class="next">
+            <a href="{{ url_for('view_bogo', bogo_id=page.next) }}">Newer <span aria-hidden="true">&rarr;</span></a>
+          </li>
+          {% else %}
+          <li class="next disabled">
+            <a href="#">Newer <span aria-hidden="true">&larr;</span></a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  );
+}
+
 function generateActiveName() {
   const states = [
     "with great enthusiasm",
