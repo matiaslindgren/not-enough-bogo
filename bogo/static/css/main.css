@@ -56,15 +56,15 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
-.body-container img {
+#body-container img {
   margin-bottom: 20px;
 }
 
-.body-container {
+#body-container {
   max-width: 700px;
 }
 
-.body-container * {
+#body-container * {
   max-width: inherit;
 }
 
