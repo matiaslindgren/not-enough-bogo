@@ -4,9 +4,11 @@ __pycache__
 *.pyc
 
 *.db
+dump.rdb
 .hypothesis
 
 node_modules
 *log
 
 *build*
+out
