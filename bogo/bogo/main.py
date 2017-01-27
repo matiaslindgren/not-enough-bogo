@@ -44,7 +44,7 @@ def get_cached_stats():
     return {
             "currentSpeed": ast.literal_eval(redis_app.get("iter_speed")),
             "activeId":     get_active_bogo_id(),
-           }
+            }
 
 
 def get_full_stats(bogo_id):
@@ -89,10 +89,10 @@ def source():
 def view_bogo(bogo_id):
     get_bogo_by_id_or_404(bogo_id)
     render_context = {
-        "bogo_id":          bogo_id,
-        "bogo_stats_url":   flask.request.base_url + "/statistics.json",
-        "active_state_url": flask.url_for("active_state")
-    }
+            "bogo_id":          bogo_id,
+            "bogo_stats_url":   flask.request.base_url + "/statistics.json",
+            "active_state_url": flask.url_for("active_state")
+            }
     return flask.render_template('index.html', **render_context)
 
 
