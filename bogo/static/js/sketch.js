@@ -24,17 +24,16 @@ class SequenceSketch {
 
     const s = function(p) {
 
+      let sketchWidth = sketch.width;
+      let sketchHeight = sketch.height;
+
       const getColumnWidth = function() {
-        return sketch.width/sketch.columns/sketch.spacing;
+        return sketchWidth/sketch.columns/sketch.spacing;
       }
 
       const getColumnHeightStep = function() {
-        return sketch.spacing*(sketch.height - sketch.yPadding)/sketch.columns;
+        return sketch.spacing*(sketchHeight - sketch.yPadding)/sketch.columns;
       }
-
-
-      let sketchWidth = sketch.width;
-      let sketchHeight = sketch.height;
 
       let columnWidth = getColumnWidth();
       let columnHeightStep = getColumnHeightStep();
