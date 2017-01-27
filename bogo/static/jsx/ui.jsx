@@ -1,7 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+
+/**
+ * React component. The top-level component containing all elements on the page with non-static state.
+ * @extends React.Component
+ */
 class Bogo extends React.Component {
+  /**
+   * Create Bogo with state variables set to "Loading...".
+   * @param {Object} props
+   * @param {string} props.updateApiUrl - JSON API URL to be polled for changes in state.
+   * @param {string} props.startDate - When sorting was started.
+   * @param {string} props.activeName - Name of the current state.
+   * @param {string} props.sequenceLength - Length of the sequence being sorted.
+   * @param {string} props.previousUrl - URL for pager previous button.
+   * @param {string} props.nextUrl - URL for pager next button.
+   */
   constructor(props) {
     super(props);
     this.state = {
@@ -11,6 +26,10 @@ class Bogo extends React.Component {
     };
   }
 
+  /**
+   * If the state is not "Sorted", set timer for calling refreshState.
+   * Else, do nothing.
+   */
   componentDidMount() {
     if (this.state.stateName === "Sorted") {
       return;
@@ -20,10 +39,15 @@ class Bogo extends React.Component {
     this.timerID = setInterval(_ => this.refreshState(), 1000);
   }
 
+  /** Remove refreshState timer. */
   componentWillUnmount() {
     clearInterval(this.timerID);
   }
 
+  /**
+   * Make a GET-request to this.props.updateApiUrl and update own state.
+   * If returned state is "Sorted", stop polling this.props.updateApiUrl.
+   */
   refreshState() {
     const updateApiUrl = this.props.updateApiUrl;
     // Update own state with the current state of the backend
@@ -52,10 +76,10 @@ class Bogo extends React.Component {
     });
   }
 
+  /** Render this component with a Table and Pager. */
   render() {
     return (
       <div>
-        <Animation />
         <Table stateName={this.state.stateName}
                startDate={this.props.startDate}
                endDate={this.state.endDate}
@@ -69,6 +93,15 @@ class Bogo extends React.Component {
 }
 
 
+/**
+ * React component. A Table containing Row-components.
+ * @param {Object} props
+ * @param {string} props.stateName
+ * @param {string} props.startDate
+ * @param {string} props.endDate
+ * @param {string} props.sequenceLength
+ * @param {string} props.currentSpeed
+ */
 function Table(props) {
   const sortProbability = 0; // tODO
   return (
@@ -87,6 +120,12 @@ function Table(props) {
 }
 
 
+/**
+ * React component. One table row with a label and value.
+ * @param {Object} props
+ * @param {string} props.label
+ * @param {string} props.value
+ */
 function Row(props) {
   return (
     <tr>
@@ -97,17 +136,12 @@ function Row(props) {
 }
 
 
-class Animation extends React.Component {
-  render() {
-    return (
-
-
-
-    );
-  }
-}
-
-
+/**
+ * React component. Pager with two buttons: older and newer.
+ * @param {Object} props
+ * @param {string} props.previousUrl - Value for the href-attribute in the button labeled 'Older'. If not given, a button labeled 'Older' will not be generated.
+ * @param {string} props.nextUrl - Value for the href-attribute in the button labeled 'Newer'. If not given, a button labeled 'Newer' will not be generated.
+ */
 function Pager(props) {
   return (
     <div className="container">
@@ -128,6 +162,7 @@ function Pager(props) {
 }
 
 
+/** Return a random string prefixed by 'Bogosorting '. The random string may or may not be funny.  */
 function generateActiveName() {
   const states = [
     "with great enthusiasm",
@@ -151,14 +186,21 @@ function generateActiveName() {
 }
 
 
-const STATIC_DATA = JSON.parse($("#bogo-data-api").html());
+/** Call ReactDOM.render and renders all components. */
+function uiMain() {
+  const STATIC_DATA = JSON.parse($("#bogo-data-api").html());
 
-ReactDOM.render(
-  <Bogo updateApiUrl={STATIC_DATA["bogoStatsUrl"]}
-        startDate={STATIC_DATA['startDate']}
-        activeName={generateActiveName()}
-        sequenceLength={STATIC_DATA['sequenceLength']}
-        previousUrl={STATIC_DATA['previousUrl']}
-        nextUrl={STATIC_DATA['nextUrl']}/>,
-  document.getElementById('react-root')
-);
+  ReactDOM.render(
+    <Bogo updateApiUrl={STATIC_DATA["bogoStatsUrl"]}
+          startDate={STATIC_DATA['startDate']}
+          activeName={generateActiveName()}
+          sequenceLength={STATIC_DATA['sequenceLength']}
+          previousUrl={STATIC_DATA['previousUrl']}
+          nextUrl={STATIC_DATA['nextUrl']}/>,
+    document.getElementById('react-root')
+  );
+}
+
+
+uiMain();
+
