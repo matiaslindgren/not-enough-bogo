@@ -85,6 +85,28 @@ body a:hover {
   text-decoration: underline;
 }
 
+
+#collapse-toggle-container,
+#bogo-title-container {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+
+#body-container .table-hover > tbody > tr:hover {
+  background-color: #dcdcdc;
+
+}
+
+#collapse-toggle {
+  font-weight: bold;
+  color: #484848;
+}
+
+#collapse-toggle:focus {
+  outline-width: 0px;
+}
+
 /* ==========================================================================
    Media Queries
    ========================================================================== */
