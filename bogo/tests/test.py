@@ -394,14 +394,14 @@ class Test(unittest.TestCase):
 
 
     @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
-    @mock.patch("bogo.config.SEQUENCE_STEP", 3)
+    @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
     def test_bogo_main_initializes_from_config(self):
-        mock_step = mock_max_length = 3
+        mock_min_length = mock_max_length = 3
         expected_seq = [3, 2, 1]
         expected_patterns = (
             "^Initializing bogo_main with:",
-            "sequence step: {}".format(mock_step),
-            "last sequence length: {}".format(mock_max_length),
+            "min length: {}".format(mock_min_length),
+            "max length: {}".format(mock_max_length),
             "backups? found",
             "^" + re.escape("Call sort_until_done with: {}".format(expected_seq))
         )
@@ -414,7 +414,7 @@ class Test(unittest.TestCase):
 
 
     @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
-    @mock.patch("bogo.config.SEQUENCE_STEP", 3)
+    @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
     def test_bogo_main_starts_from_new_sequence_if_no_backups_exist(self):
         expected_seq = [3, 2, 1]
         expected_patterns = (
@@ -433,7 +433,7 @@ class Test(unittest.TestCase):
 
 
     @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
-    @mock.patch("bogo.config.SEQUENCE_STEP", 3)
+    @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_bogo_main_starts_from_correct_backup(self, xs):
         self._insert_bogo(xs)

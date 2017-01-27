@@ -5,6 +5,7 @@ import random
 import ast
 import datetime
 import time
+import itertools
 
 import bogo.config as config
 import bogo.util as util
@@ -130,9 +131,23 @@ def normalized_messiness(seq):
     return int(math.ceil(sum(abs(i + 1 - x) for i, x in enumerate(seq))/len(seq)))
 
 
-def all_sequences(start, step, max_length):
-    seq_upper_limits = range(start, max_length + step, step)
-    return (list(reversed(range(1, n))) for n in seq_upper_limits)
+def sequence_generator(start, stop):
+    """
+    Infinite iterator yielding following lists:
+        [start, start-1, ..., 1]
+        [start+1, start, start-1, ..., 1]
+        [start+2, start+1, start, start-1, ..., 1]
+         .
+         .
+         .
+        [stop, stop-1, ..., start+1, start, start-1, ..., 1]
+        [start, start-1, ..., 1]
+        [start+1, start, start-1, ..., 1]
+         .
+         .
+         .
+    """
+    return itertools.cycle(list(reversed(range(1, n))) for n in range(start+1, stop+1))
 
 
 # TODO: rethink the duties of this function and bogo_main, who
@@ -202,15 +217,15 @@ def bogo_main():
 
     Automatically restarts from previous known state.
     """
-    step = config.SEQUENCE_STEP
+    min_length = config.SEQUENCE_MIN_LENGTH
     max_length = config.SEQUENCE_MAX_LENGTH
-    celery_logger.info("Initializing bogo_main with:\nsequence step: {}\nlast sequence length: {}".format(step, max_length))
+    celery_logger.info("Initializing bogo_main with:\nmin length: {}\nmax length: {}".format(min_length, max_length))
     previous_state = get_previous_state_all()
 
     if previous_state:
         previous_seq = ast.literal_eval(previous_state['sequence'])
         celery_logger.info("Previous backup found, seq of len {}".format(len(previous_seq)))
-        next_seq_len = step + 1 + len(previous_seq)
+        next_seq_len = min(max_length, len(previous_seq) + 1)
         previous_random = ast.literal_eval(previous_state['random_state'])
         bogo_random.setstate(previous_random)
 
@@ -219,11 +234,9 @@ def bogo_main():
         celery_logger.info("Backup sequence sorted: {}".format(previous_seq))
     else:
         celery_logger.info("No backups found, starting a new bogo cycle.")
-        next_seq_len = step + 1
+        next_seq_len = min_length
 
-    not_yet_sorted = all_sequences(next_seq_len, step, max_length)
-
-    for seq in not_yet_sorted:
+    for seq in sequence_generator(next_seq_len, max_length):
         celery_logger.info("Call sort_until_done with: {}".format(seq))
         sort_until_done(seq)
         celery_logger.info("sort_until_done returned, parameter is now {}".format(seq))
