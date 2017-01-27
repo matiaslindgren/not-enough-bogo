@@ -1,6 +1,5 @@
 import flask
 import sqlite3
-import math
 import random
 import ast
 import datetime
@@ -247,7 +246,7 @@ def connect_db():
 
 
 @flask_app.teardown_appcontext
-def _close_db(error):
+def _close_db():
     if hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
         getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME).close()
 
@@ -377,7 +376,7 @@ def get_adjacent_bogos(bogo):
 
 @flask_app.cli.command("run_bogo")
 def run_bogo_command():
-    res = bogo_main.delay()
+    bogo_main.delay()
 
 
 @flask_app.cli.command('initdb')
