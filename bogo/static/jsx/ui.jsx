@@ -10,37 +10,41 @@ class Bogo extends React.Component {
    * Create Bogo with state variables set to "Loading...".
    * @param {Object} props
    * @param {string} props.bogoId - Id of this Bogo in the backend
-   * @param {string} props.activeStateUrl - JSON API URL to be polled for changes in state.
    * @param {string} props.updateApiUrl - URL for full statistics, should be considered slow.
-   * @param {string} props.animationSettings - Parameters for the SequenceSketch object which wraps the p5js instance responsible of drawing the animation.
-   * @param {string} props.activeName - Name of the current state.
+   * @param {string} props.activeStateUrl - JSON API URL to be polled for changes in state.
+   * @param {string} props.startDate - Date when sorting was started.
+   * @param {string} props.endDate - (Optional) Date when sorting ended. NOTE: the presence of this parameter means the sequence should be considered sorted.
+   * @param {string} props.stopAnimationHandle
    * @param {string} props.previousUrl - URL for pager previous button.
    * @param {string} props.nextUrl - URL for pager next button.
    */
-  constructor(props) {
-    super(props);
+   constructor(props) {
+     super(props);
 
-    let state;
+     let initState;
+     const shufflin = props.endDate === null || props.endDate === undefined;
 
-    if (props.endDate) {
-      state = {
-        stateName: "Sorted",
-        endDate: props.endDate,
-        currentSpeed: "-"
-      }
-    }
-    else {
-      state = {
-        stateName: this.generateActiveName(),
-        endDate: "Maybe some day",
-        currentSpeed: "Loading..."
-      }
-    }
-    this.state = Object.assign(
-      state,
-      { previousUrl: this.props.previousUrl,
-        nextUrl: this.props.nextUrl }
-    );
+     if (shufflin) {
+       initState = {
+         stateName: this.generateActiveName(),
+         endDate: "Maybe some day",
+         currentSpeed: "Loading..."
+       }
+     }
+     else {
+       initState = {
+         stateName: "Sorted",
+         endDate: props.endDate,
+         currentSpeed: "-"
+       }
+     }
+     this.state = Object.assign(
+       initState,
+       { stateNameSuffix: " ",
+         previousUrl: this.props.previousUrl,
+         nextUrl: this.props.nextUrl,
+       }
+     );
   }
 
   /** Return a random string prefixed by 'Bogosorting '. The random string may or may not be funny.  */
@@ -66,34 +70,17 @@ class Bogo extends React.Component {
     return "Bogosorting " + states[Math.floor(Math.random()*states.length)];
   }
 
-  /**
-   * If the state is not "Sorted", set timer for calling refreshState and draw animation with shuffling.
-   * Else, do not set a timer and draw one frame of a sorted sequence.
-   */
+  /** If the state is not "Sorted", set timer for calling refreshState. */
   componentDidMount() {
-    const isSorted = this.state.stateName === "Sorted";
-
-    if (!isSorted) {
-      // TODO the lambda is redundant? test
+    if (this.state.stateName !== "Sorted")
       this.timerID = setInterval(_ => this.refreshState(), 1000);
-    }
-
-    const animationSettings = Object.assign(
-      this.props.animationSettings,
-      { shufflin: !isSorted,
-        columns:  this.props.sequenceLength }
-    );
-    // animate
-    this.animation = new SequenceSketch(animationSettings);
-    this.p5app = new p5(this.animation.p5sketch());
   }
 
-  /** The sequence is sorted, stop refresh timer and animation. */
+  /** The sequence is sorted, stop refresh timer. */
   componentWillUnmount() {
     if (this.timerID)
       clearInterval(this.timerID);
-    if (this.animation)
-      this.animation.stopShuffling();
+    this.props.stopAnimationHandle();
   }
 
   /**
@@ -105,7 +92,6 @@ class Bogo extends React.Component {
 
     // Retrieve current state
     $.getJSON(activeStateUrl, data => {
-
       // If the returned state id is different from this Bogo,
       // the sequence has been sorted in the backend.
       if (data.activeId !== this.props.bogoId) {
@@ -113,38 +99,47 @@ class Bogo extends React.Component {
         $.getJSON(this.props.updateApiUrl, fullData => {
           this.componentWillUnmount();
           this.setState({
-            stateName: "Sorted",
-            endDate: fullData.endDate,
-            currentSpeed: "-",
-            previousUrl: fullData.previousUrl,
-            nextUrl: fullData.nextUrl
+            stateName:       "Sorted",
+            stateNameSuffix: "",
+            endDate:         fullData.endDate,
+            currentSpeed:    "-",
+            previousUrl:     fullData.previousUrl,
+            nextUrl:         fullData.nextUrl
           });
         });
       }
       else {
+        // The sequence is still being sorted, update speed and dots in title
+        const currentSuffix = this.state.stateNameSuffix;
         this.setState({
-          currentSpeed: Math.round(data.currentSpeed) + " shuffles per second"
+          currentSpeed:    Math.round(data.currentSpeed) + " shuffles per second",
+          stateNameSuffix: currentSuffix.length < 4 ? currentSuffix + "." : " "
         });
       }
-
     });
   }
 
-  /** Render this component with a Table and Pager. */
+  /** Render the whole mess. */
   render() {
     return (
-      <div>
-        <Table stateName=     {this.state.stateName}
-               startDate=     {this.props.startDate}
-               endDate=       {this.state.endDate}
-               sequenceLength={this.props.sequenceLength}
-               currentSpeed=  {this.state.currentSpeed} />
-        <Pager previousUrl=   {this.state.previousUrl}
-               nextUrl=       {this.state.nextUrl}/>
+      <div className="container">
+        <div id="bogo-title-container">
+          <h4>{this.state.stateName}<span>{this.state.stateNameSuffix}</span></h4>
+        </div>
+        <div className="container" id="sketch-container"></div>
+        <Table startDate=      {this.props.startDate}
+               endDate=        {this.state.endDate}
+               sequenceLength= {this.props.sequenceLength}
+               currentSpeed=   {this.state.currentSpeed}
+        />
+        <Pager previousUrl=    {this.state.previousUrl}
+               nextUrl=        {this.state.nextUrl}
+        />
       </div>
     );
   }
 }
+
 
 
 /**
@@ -216,11 +211,12 @@ function Pager(props) {
 }
 
 
+
 /** Call ReactDOM.render and render all components. */
 function uiMain() {
   // Get backend json api url for statistics
   const staticData = JSON.parse($("#bogo-data-api").html());
-  const bogoStatsUrl = staticData['bogoStatsUrl'];
+  const bogoStatsUrl = staticData.bogoStatsUrl;
 
   // Get initial state from backend and render ReactDOM when data arrives
   $.getJSON(bogoStatsUrl, data => {
@@ -234,20 +230,39 @@ function uiMain() {
       canvasHeight: canvas.height(),
       spacing:      1.1,
       yPadding:     60,
+      shufflin:     data.endDate === null || data.endDate === undefined,
+      columns:      data.sequenceLength,
     }
 
+    const animation = new SequenceSketch(sketchSettings);
+
     ReactDOM.render(
-      <Bogo bogoId=             {staticData['bogoId']}
+      <Bogo bogoId=             {staticData.bogoId}
             updateApiUrl=       {bogoStatsUrl}
-            activeStateUrl=     {staticData['minimalApiUrl']}
-            startDate=          {data['startDate']}
-            endDate=            {data['endDate']}
-            sequenceLength=     {data['sequenceLength']}
-            animationSettings=  {sketchSettings}
-            previousUrl=        {data['previousUrl']}
-            nextUrl=            {data['nextUrl']}/>,
+            activeStateUrl=     {staticData.minimalApiUrl}
+            startDate=          {data.startDate}
+            endDate=            {data.endDate}
+            sequenceLength=     {data.sequenceLength}
+            stopAnimationHandle={(_ => animation.stopShuffling())}
+            previousUrl=        {data.previousUrl}
+            nextUrl=            {data.nextUrl}/>,
       document.getElementById('react-root')
     );
+
+    let p5app = new p5(animation.p5sketch());
+    // hi, my name is hacky hackerpants and this is hack-ass
+    const makep5 = function(t) {
+      try {
+        // Trigger redraw
+        p5app.windowResized();
+      } catch(err) {
+        // Something was missing and everything exploded,
+        // try again after 2t ms.
+        setTimeout(makep5, 2*t);
+      }
+      // Nothing exploded, recursion stops
+    }
+    makep5(10);
   });
 }
 
