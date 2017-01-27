@@ -3,7 +3,8 @@ create table bogos (
   id              integer    primary key autoincrement,
   sequence_length integer    not null,
   started         date       not null,
-  finished        date
+  finished        date,
+  iterations      integer
 );
 
 drop table if exists backups;

@@ -193,7 +193,7 @@ def sort_until_done(sequence, from_backup=False):
 
     celery_logger.info('Done sorting bogo {} in {} iterations.'.format(this_bogo_id, total_iterations))
 
-    close_bogo(this_bogo_id)
+    close_bogo(this_bogo_id, total_iterations)
     celery_logger.info('Bogo {} closed.'.format(this_bogo_id))
 
     if redis_app.flushall():
@@ -293,9 +293,9 @@ def create_new_bogo(sequence):
     return bogo_id
 
 
-def close_bogo(bogo_id):
+def close_bogo(bogo_id, total_iterations):
     """
-    Set the finished field of bogo with id bogo_id to now.
+    Update bogo with finished date set to now and total_iterations given as parameter.
     """
     db = get_db()
 
