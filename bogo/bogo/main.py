@@ -81,6 +81,11 @@ def statistics():
     return "nothing here, yet"
 
 
+@flask_app.route("/source")
+def source():
+    return "nothing here, yet"
+
+
 @flask_app.route("/bogo/<int:bogo_id>")
 def view_bogo(bogo_id):
     get_bogo_by_id_or_404(bogo_id)
