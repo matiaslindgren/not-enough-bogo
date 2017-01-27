@@ -86,9 +86,6 @@ class Bogo extends React.Component {
     // animate
     this.animation = new SequenceSketch(animationSettings);
     this.p5app = new p5(this.animation.p5sketch());
-
-    console.warn(this.animation);
-    console.warn(this.p5app);
   }
 
   /** The sequence is sorted, stop refresh timer and animation. */

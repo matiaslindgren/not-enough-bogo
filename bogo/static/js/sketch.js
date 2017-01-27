@@ -11,9 +11,6 @@ class SequenceSketch {
     this.shufflin =    settings.shufflin;
 
     this.sequence = _.range(1, this.columns+1);
-
-    console.log("SequenceSketch instance is ");
-    console.log(this);
   }
 
   stopShuffling() {
