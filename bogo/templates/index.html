@@ -27,12 +27,11 @@
 
 
 <script id="bogo-data-api" type="application/json">
-{ "bogoStatsUrl":     "{{ bogo_stats_url }}",
-  "startDate":        "{{ start_date }}",
-  "sequenceLength":   "{{ sequence_length }}",
-  "previousUrl":      "{{ previous_url }}",
-  "nextUrl":          "{{ next_url }}"
-  }
+{
+  "bogoId":           "{{ bogo_id }}",
+  "bogoStatsUrl":     "{{ bogo_stats_url }}",
+  "minimalApiUrl":    "{{ active_state_url }}"
+}
 </script>
 
 {% endblock body_content %}

@@ -39,32 +39,18 @@ def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
             )
 
 
-def get_stats(bogo_id):
-    """
-    Retrieve sorting statistics for bogo with given id.
-    If the bogo is actively sorting a sequence, fetch
-    data from the redis cache, else from the database.
-    """
-    if not bogo_id:
-        stats = {}
-    elif get_active_bogo_id() == str(bogo_id):
-        stats = {
-            "startDate":      redis_app.get("start_date"),
-            "endDate":        None,
-            "sequenceLength": redis_app.get("seqeuence_length"),
-            "currentSpeed":   ast.literal_eval(redis_app.get("iter_speed"))
-        }
-    else:
-        bogo_row = get_bogo_by_id_or_404(bogo_id)
-        if bogo_row:
-            stats = {
-                "startDate":      bogo_row['started'],
-                "endDate":        bogo_row['finished'],
-                "sequenceLength": bogo_row['sequence_length'],
-                "currentSpeed":   0
-            }
-        else:
-            stats = {}
+def get_cached_stats():
+    """ Retrieve current sorting state from the redis cache.  """
+    return {
+            "currentSpeed": ast.literal_eval(redis_app.get("iter_speed")),
+            "activeId":     get_active_bogo_id(),
+           }
+
+
+def get_full_stats(bogo_id):
+    stats = get_db_stats(bogo_id)
+    if get_active_bogo_id() == str(bogo_id):
+        stats.update(get_cached_stats())
     return stats
 
 
@@ -96,27 +82,35 @@ def statistics():
 
 @flask_app.route("/bogo/<int:bogo_id>")
 def view_bogo(bogo_id):
+    get_bogo_by_id_or_404(bogo_id)
     render_context = {
+        "bogo_id":          bogo_id,
         "bogo_stats_url":   flask.request.base_url + "/statistics.json",
-        "start_date":       redis_app.get('start_date'),
-        "sequence_length":  redis_app.get('sequence_length'),
+        "active_state_url": flask.url_for("active_state")
     }
-
-    bogo = get_bogo_by_id_or_404(bogo_id)
-    prev_bogo, _, next_bogo = get_adjacent_bogos(bogo)
-
-    if prev_bogo:
-        render_context['previous_url'] = flask.url_for("view_bogo", bogo_id=prev_bogo['id'])
-    if next_bogo:
-        render_context['next_url'] = flask.url_for("view_bogo", bogo_id=next_bogo['id'])
-
     return flask.render_template('index.html', **render_context)
 
 
 @flask_app.route("/bogo/<int:bogo_id>/statistics.json")
 def bogo_statistics(bogo_id):
-    stats = get_stats(bogo_id)
-    return flask.jsonify(currentSpeed=stats['currentSpeed'], endDate=stats['endDate'])
+    """ Return full statistics for a bogo with given id as JSON. """
+    stats = get_full_stats(bogo_id)
+
+    bogo = get_bogo_by_id_or_404(bogo_id)
+    prev_bogo, _, next_bogo = get_adjacent_bogos(bogo)
+
+    if prev_bogo:
+        stats['previousUrl'] = flask.url_for("view_bogo", bogo_id=prev_bogo['id'])
+    if next_bogo:
+        stats['nextUrl'] = flask.url_for("view_bogo", bogo_id=next_bogo['id'])
+
+    return flask.jsonify(**stats)
+
+
+@flask_app.route("/bogo/active_state.json")
+def active_state():
+    """ Return the smallest set of changing variables for the active bogo. """
+    return flask.jsonify(**get_cached_stats())
 
 
 ##############################
@@ -287,8 +281,15 @@ def backup_sorting_state(sequence, random_instance):
     return cursor.lastrowid
 
 
-def execute_and_fetch_one(query, args=()):
-    return get_db().execute(query, args).fetchone()
+def get_db_stats(bogo_id):
+    """ Retrieve sorting statistics for bogo with given id from the database.  """
+    bogo_row = get_bogo_by_id_or_404(bogo_id)
+    return  {
+            "startDate":      bogo_row['started'],
+            "endDate":        bogo_row['finished'],
+            "sequenceLength": bogo_row['sequence_length'],
+            "currentSpeed":   0
+            }
 
 
 def get_bogo_by_id_or_404(bogo_id):
@@ -297,6 +298,9 @@ def get_bogo_by_id_or_404(bogo_id):
         flask.abort(404)
     return result
 
+
+def execute_and_fetch_one(query, args=()):
+    return get_db().execute(query, args).fetchone()
 
 def get_previous_state_all():
     return execute_and_fetch_one("select * from backups order by saved desc")
