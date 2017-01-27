@@ -27,9 +27,6 @@ settings.register_profile('ci', settings(max_examples=500))
 settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', default='dev'))
 
 
-def is_sorted(xs):
-    return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
-
 @strategies.composite
 def _integer_and_less(draw):
     n = draw(strategies.integers(min_value=1, max_value=20))
@@ -116,28 +113,6 @@ class Test(unittest.TestCase):
             db = main.get_db()
             fetch_query = "select * from backups order by saved desc"
             return db.execute(fetch_query).fetchone()
-
-
-    @given(xs=LIST_RANGE_INTEGERS_SORTED)
-    def test_normalized_messiness_sorted(self, xs):
-        with main.flask_app.app_context():
-            self.assertEqual(
-                0,
-                main.normalized_messiness(xs),
-                "Sorted lists should have a messiness equal to 0"
-            )
-
-
-    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_normalized_messiness_notsorted(self, xs):
-        self.random.shuffle(xs)
-        assume(not is_sorted(xs))
-        with main.flask_app.app_context():
-            self.assertLess(
-                0,
-                main.normalized_messiness(xs),
-                "Lists which are not sorted should have a messiness greater than 0"
-            )
 
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
@@ -300,7 +275,7 @@ class Test(unittest.TestCase):
     def test_sort_until_done_sorts_unsorted_sequence(self, xs):
         with main.flask_app.app_context():
             main.sort_until_done(xs)
-        self.assertTrue(is_sorted(xs), "Bogosorting did not sort the sequence.")
+        self.assertTrue(main.is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)

@@ -123,17 +123,8 @@ def active_state():
 # BOGO LOGIC
 ##############################
 
-
-def normalized_messiness(seq):
-    """
-    Heuristic sortedness measure.
-    Works only if list(sorted(seq)) == list(range(1, len(seq)+1)).
-
-    Returns 0 if list(seq) == list(range(1, len(seq)+1)).
-    Else returns an integer d > 0, which increases for every
-    integer in seq that is further away from its index.
-    """
-    return int(math.ceil(sum(abs(i + 1 - x) for i, x in enumerate(seq))/len(seq)))
+def is_sorted(xs):
+    return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
 
 
 def sequence_generator(start, stop):
@@ -159,8 +150,9 @@ def sequence_generator(start, stop):
 # should write the bogos and how to restart backups?
 def sort_until_done(sequence, from_backup=False):
     """
-    Bogosort sequence until it is sorted.
-    Writes iterations to the database.
+    A stateful mess which shuffles the given sequence until it is sorted.
+    If from_backup is given and True, this function will not create a new bogo into the database.
+    If from_backup is False, a new bogo will be written into the database.
     Writes backups of the sorting state at BACKUP_INTERVAL iterations.
     """
     if from_backup:
@@ -179,16 +171,13 @@ def sort_until_done(sequence, from_backup=False):
 
     celery_logger.info('Begin bogosorting with:\nsequence: {}\nbogo id: {}\nbackup interval: {}\niter speed resolution: {}.'.format(sequence, this_bogo_id, backup_interval, iter_speed_resolution))
 
-    messiness = normalized_messiness(sequence)
     iteration = 0
     total_iterations = 0
     cycle_total_time = 0.0
 
-
-    while messiness > 0:
+    while not is_sorted(sequence):
         begin_time = time.perf_counter()
         bogo_random.shuffle(sequence)
-        messiness = normalized_messiness(sequence)
         if iteration >= backup_interval:
             celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
             backup_sorting_state(sequence, bogo_random)
