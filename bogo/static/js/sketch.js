@@ -1,15 +1,19 @@
 
 
 class SequenceSketch {
-  constructor(height, width, spacing, yPadding, columns, containerId) {
-    this.height = height;
-    this.width = width;
-    this.spacing = spacing;
-    this.yPadding = yPadding;
-    this.columns = columns;
-    this.containerId = containerId;
-    this.sequence = _.range(1, columns+1);
-    this.shufflin = true;
+  constructor(settings) {
+    this.containerId = settings.containerId;
+    this.height =      settings.canvasHeight;
+    this.width =       settings.canvasWidth;
+    this.spacing =     settings.spacing;
+    this.columns =     settings.columns;
+    this.yPadding =    settings.yPadding;
+    this.shufflin =    settings.shufflin;
+
+    this.sequence = _.range(1, this.columns+1);
+
+    console.log("SequenceSketch instance is ");
+    console.log(this);
   }
 
   stopShuffling() {
@@ -23,11 +27,20 @@ class SequenceSketch {
 
     const s = function(p) {
 
+      const getColumnWidth = function() {
+        return sketch.width/sketch.columns/sketch.spacing;
+      }
+
+      const getColumnHeightStep = function() {
+        return sketch.spacing*(sketch.height - sketch.yPadding)/sketch.columns;
+      }
+
+
       let sketchWidth = sketch.width;
       let sketchHeight = sketch.height;
 
-      let columnWidth = sketch.width/sketch.columns/sketch.spacing;
-      let columnHeightStep = sketch.spacing*(sketch.height - yPadding)/sketch.columns;
+      let columnWidth = getColumnWidth();
+      let columnHeightStep = getColumnHeightStep();
 
       let sequence = sketch.sequence;
 
@@ -56,8 +69,8 @@ class SequenceSketch {
       const resizeSketch = function(newWidth, newHeight) {
         sketchHeight = newHeight;
         sketchWidth = newWidth;
-        columnWidth = sketchWidth/sketch.columns/sketch.spacing;
-        columnHeightStep = sketch.spacing*(sketchHeight - yPadding)/sketch.columns;
+        columnWidth = getColumnWidth();
+        columnHeightStep = getColumnHeightStep();
       }
 
       p.setup = function() {
@@ -94,17 +107,5 @@ class SequenceSketch {
     return s;
   }
 };
-
-
-const canvasContainerId = 'sketch-container';
-const canvasWidth = $("#sketch-container").width();
-const canvasHeight = $("#sketch-container").height();
-const spacing = 1.1;
-const yPadding = 60;
-const columns = 20;
-
-const activeSketch = new SequenceSketch(canvasHeight, canvasWidth, spacing, yPadding, columns, canvasContainerId);
-
-const p5app = new p5(activeSketch.p5sketch());
 
 

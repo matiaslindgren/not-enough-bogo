@@ -9,69 +9,127 @@ class Bogo extends React.Component {
   /**
    * Create Bogo with state variables set to "Loading...".
    * @param {Object} props
-   * @param {string} props.updateApiUrl - JSON API URL to be polled for changes in state.
-   * @param {string} props.startDate - When sorting was started.
+   * @param {string} props.bogoId - Id of this Bogo in the backend
+   * @param {string} props.activeStateUrl - JSON API URL to be polled for changes in state.
+   * @param {string} props.updateApiUrl - URL for full statistics, should be considered slow.
+   * @param {string} props.animationSettings - Parameters for the SequenceSketch object which wraps the p5js instance responsible of drawing the animation.
    * @param {string} props.activeName - Name of the current state.
-   * @param {string} props.sequenceLength - Length of the sequence being sorted.
    * @param {string} props.previousUrl - URL for pager previous button.
    * @param {string} props.nextUrl - URL for pager next button.
    */
   constructor(props) {
     super(props);
-    this.state = {
-      stateName:    "Loading...",
-      endDate:      "Loading...",
-      currentSpeed: "Loading..."
-    };
+
+    let state;
+
+    if (props.endDate) {
+      state = {
+        stateName: "Sorted",
+        endDate: props.endDate,
+        currentSpeed: "-"
+      }
+    }
+    else {
+      state = {
+        stateName: this.generateActiveName(),
+        endDate: "Maybe some day",
+        currentSpeed: "Loading..."
+      }
+    }
+    this.state = Object.assign(
+      state,
+      { previousUrl: this.props.previousUrl,
+        nextUrl: this.props.nextUrl }
+    );
+  }
+
+  /** Return a random string prefixed by 'Bogosorting '. The random string may or may not be funny.  */
+  generateActiveName() {
+    const states = [
+      "with great enthusiasm",
+      "vigorously",
+      "with seemingly unlimited passion",
+      "rather impetuously",
+      "in an unreasoned manner",
+      "like a furious Jerboa",
+      "with passion",
+      "ironically fast",
+      "while occasionally sipping cheap red wine",
+      "furiously, angrily even",
+      "with white shores and green fields in mind",
+      "and thinking of tomorrow",
+      "platonically, whatever that means in this context",
+      "with utmost haste",
+      "whilst questioning the meaning of all this",
+      "with a tad of melancholy"
+    ];
+    return "Bogosorting " + states[Math.floor(Math.random()*states.length)];
   }
 
   /**
-   * If the state is not "Sorted", set timer for calling refreshState.
-   * Else, do nothing.
+   * If the state is not "Sorted", set timer for calling refreshState and draw animation with shuffling.
+   * Else, do not set a timer and draw one frame of a sorted sequence.
    */
   componentDidMount() {
-    if (this.state.stateName === "Sorted") {
-      return;
+    const isSorted = this.state.stateName === "Sorted";
+
+    if (!isSorted) {
+      // TODO the lambda is redundant? test
+      this.timerID = setInterval(_ => this.refreshState(), 1000);
     }
 
-    // TODO the lambda is redundant? test
-    this.timerID = setInterval(_ => this.refreshState(), 1000);
+    const animationSettings = Object.assign(
+      this.props.animationSettings,
+      { shufflin: !isSorted,
+        columns:  this.props.sequenceLength }
+    );
+    // animate
+    this.animation = new SequenceSketch(animationSettings);
+    this.p5app = new p5(this.animation.p5sketch());
+
+    console.warn(this.animation);
+    console.warn(this.p5app);
   }
 
-  /** Remove refreshState timer. */
+  /** The sequence is sorted, stop refresh timer and animation. */
   componentWillUnmount() {
-    clearInterval(this.timerID);
+    if (this.timerID)
+      clearInterval(this.timerID);
+    if (this.animation)
+      this.animation.stopShuffling();
   }
 
   /**
-   * Make a GET-request to this.props.updateApiUrl and update own state.
-   * If returned state is "Sorted", stop polling this.props.updateApiUrl.
+   * Make a GET-request to this.props.activeStateUrl and update own state.
+   * If the state changes to sorted, stop polling this.props.updateApiUrl.
    */
   refreshState() {
-    const updateApiUrl = this.props.updateApiUrl;
-    // Update own state with the current state of the backend
-    // A non-null end date signifies the sorting has ended
-    $.getJSON(updateApiUrl, data => {
+    const activeStateUrl = this.props.activeStateUrl;
 
-      let changedState;
+    // Retrieve current state
+    $.getJSON(activeStateUrl, data => {
 
-      if (data.endDate) {
-        this.componentWillUnmount();
-        changedState = {
-          stateName: "Sorted",
-          endDate: data.endDate,
-          currentSpeed: "-"
-        }
+      // If the returned state id is different from this Bogo,
+      // the sequence has been sorted in the backend.
+      if (data.activeId !== this.props.bogoId) {
+        // Retrieve full statistics for this Bogo and stop everything.
+        $.getJSON(this.props.updateApiUrl, fullData => {
+          this.componentWillUnmount();
+          this.setState({
+            stateName: "Sorted",
+            endDate: fullData.endDate,
+            currentSpeed: "-",
+            previousUrl: fullData.previousUrl,
+            nextUrl: fullData.nextUrl
+          });
+        });
       }
       else {
-        changedState = {
-          stateName: this.props.activeName,
-          endDate: "Maybe some day",
+        this.setState({
           currentSpeed: Math.round(data.currentSpeed) + " shuffles per second"
-        }
+        });
       }
 
-      this.setState(Object.assign(data, changedState));
     });
   }
 
@@ -79,13 +137,13 @@ class Bogo extends React.Component {
   render() {
     return (
       <div>
-        <Table stateName={this.state.stateName}
-               startDate={this.props.startDate}
-               endDate={this.state.endDate}
+        <Table stateName=     {this.state.stateName}
+               startDate=     {this.props.startDate}
+               endDate=       {this.state.endDate}
                sequenceLength={this.props.sequenceLength}
-               currentSpeed={this.state.currentSpeed} />
-        <Pager previousUrl={this.props.previousUrl}
-               nextUrl={this.props.nextUrl}/>
+               currentSpeed=  {this.state.currentSpeed} />
+        <Pager previousUrl=   {this.state.previousUrl}
+               nextUrl=       {this.state.nextUrl}/>
       </div>
     );
   }
@@ -146,11 +204,11 @@ function Pager(props) {
     <div className="container">
       <nav aria-label="...">
         <ul className="pager">
-          {props.previousUrl.length > 0 &&
+          {(props.previousUrl && props.previousUrl.length > 0) &&
             <li className="previous">
               <a href={props.previousUrl}><span aria-hidden="true">&larr;</span> Older</a>
             </li>}
-          {props.nextUrl.length > 0 &&
+          {(props.nextUrl && props.nextUrl.length > 0) &&
             <li className="next">
               <a href={props.nextUrl}>Newer <span aria-hidden="true">&rarr;</span></a>
             </li>}
@@ -161,43 +219,39 @@ function Pager(props) {
 }
 
 
-/** Return a random string prefixed by 'Bogosorting '. The random string may or may not be funny.  */
-function generateActiveName() {
-  const states = [
-    "with great enthusiasm",
-    "vigorously",
-    "with seemingly unlimited passion",
-    "rather impetuously",
-    "in an unreasoned manner",
-    "like a furious Jerboa",
-    "with passion",
-    "ironically fast",
-    "while occasionally sipping cheap red wine",
-    "furiously, angrily even",
-    "with white shores and green fields in mind",
-    "and thinking of tomorrow",
-    "platonically, whatever that means in this context",
-    "with utmost haste",
-    "whilst questioning the meaning of all this",
-    "with a tad of melancholy"
-  ];
- return "Bogosorting " + states[Math.floor(Math.random()*states.length)];
-}
-
-
-/** Call ReactDOM.render and renders all components. */
+/** Call ReactDOM.render and render all components. */
 function uiMain() {
-  const STATIC_DATA = JSON.parse($("#bogo-data-api").html());
+  // Get backend json api url for statistics
+  const staticData = JSON.parse($("#bogo-data-api").html());
+  const bogoStatsUrl = staticData['bogoStatsUrl'];
 
-  ReactDOM.render(
-    <Bogo updateApiUrl={STATIC_DATA["bogoStatsUrl"]}
-          startDate={STATIC_DATA['startDate']}
-          activeName={generateActiveName()}
-          sequenceLength={STATIC_DATA['sequenceLength']}
-          previousUrl={STATIC_DATA['previousUrl']}
-          nextUrl={STATIC_DATA['nextUrl']}/>,
-    document.getElementById('react-root')
-  );
+  // Get initial state from backend and render ReactDOM when data arrives
+  $.getJSON(bogoStatsUrl, data => {
+
+    // Sketch settings
+    const canvasContainerId = 'sketch-container';
+    const canvas = $("#" + canvasContainerId);
+    const sketchSettings = {
+      containerId:  canvasContainerId,
+      canvasWidth:  canvas.width(),
+      canvasHeight: canvas.height(),
+      spacing:      1.1,
+      yPadding:     60,
+    }
+
+    ReactDOM.render(
+      <Bogo bogoId=             {staticData['bogoId']}
+            updateApiUrl=       {bogoStatsUrl}
+            activeStateUrl=     {staticData['minimalApiUrl']}
+            startDate=          {data['startDate']}
+            endDate=            {data['endDate']}
+            sequenceLength=     {data['sequenceLength']}
+            animationSettings=  {sketchSettings}
+            previousUrl=        {data['previousUrl']}
+            nextUrl=            {data['nextUrl']}/>,
+      document.getElementById('react-root')
+    );
+  });
 }
 
 
