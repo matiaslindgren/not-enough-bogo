@@ -143,7 +143,7 @@ class Bogo extends React.Component {
 
 
 /**
- * React component. A Table containing Row-components.
+ * React component. A collapsable Table containing Row-components.
  * @param {Object} props
  * @param {string} props.stateName
  * @param {string} props.startDate
@@ -155,15 +155,27 @@ function Table(props) {
   const sortProbability = 0; // tODO
   return (
     <div>
-      <table className="table table-bordered table-condensed">
-        <tbody>
-          <Row label="State"               value={props.stateName} />
-          <Row label="Sorting started at"  value={props.startDate} />
-          <Row label="Sorting finished at" value={props.endDate} />
-          <Row label="Sequence length"     value={props.sequenceLength} />
-          <Row label="Current speed"       value={props.currentSpeed} />
-        </tbody>
-      </table>
+      <div className="container" id="collapse-toggle-container">
+        <button className="btn btn-default btn-xs"
+                id="collapse-toggle"
+                type="button"
+                data-toggle="collapse"
+                data-target="#statistics-collapse"
+                aria-expanded="false"
+                aria-controls="statistics-collapse">
+        Data go away
+        </button>
+      </div>
+      <div className="collapse in" id="statistics-collapse">
+        <table className="table table-hover table-condensed">
+          <tbody>
+            <Row label="Current speed"       value={props.currentSpeed} />
+            <Row label="Sequence length"     value={props.sequenceLength} />
+            <Row label="Sorting started at"  value={props.startDate} />
+            <Row label="Sorting finished at" value={props.endDate} />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -178,8 +190,8 @@ function Table(props) {
 function Row(props) {
   return (
     <tr>
-      <td className="col-xs-4">{props.label}</td>
-      <td className="col-xs-8">{props.value}</td>
+      <td className="col-xs-6">{props.label}</td>
+      <td className="col-xs-6">{props.value}</td>
     </tr>
   );
 }
