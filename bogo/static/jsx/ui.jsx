@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-
 /**
  * React component. The top-level component containing all elements on the page with non-static state.
  * @extends React.Component

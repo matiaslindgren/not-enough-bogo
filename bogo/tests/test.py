@@ -506,7 +506,7 @@ class Test(unittest.TestCase):
             self.assertEqual(
                 response.status_code,
                 404,
-                "Getting path with bogo key when the database is empty should 404."
+                "Getting path with any bogo key when the database is empty should 404."
             )
 
 
@@ -522,17 +522,17 @@ class Test(unittest.TestCase):
         self.fail("not implemented")
 
     @unittest.skip("not implemented")
-    def test_bogo_stops_on_command(self):
+    def test_get_cached_stats_when_they_exist(self):
+        self.fail("not implemented")
+
+
+    @unittest.skip("not implemented")
+    def test_get_database_stats_when_empty(self):
         self.fail("not implemented")
 
     @unittest.skip("not implemented")
-    def test_get_stats_returns_active_bogo(self):
+    def test_get_database_stats_when_they_exist(self):
         self.fail("not implemented")
-
-    @unittest.skip("not implemented")
-    def test_get_stats_returns_nonactive_bogo(self):
-        self.fail("not implemented")
-
 
 
     def tearDown(self):

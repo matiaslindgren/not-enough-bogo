@@ -5,7 +5,6 @@ import random
 import ast
 import datetime
 import time
-import itertools
 
 import bogo.config as config
 import bogo.util as util
@@ -30,14 +29,14 @@ def get_active_bogo_id():
 
 
 def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
-    """
-    Clear redis cache and insert new values.
-    """
+    """ Clear redis cache and insert new values.  """
     redis_app.flushall()
-    return (redis_app.set("active_bogo_id", bogo_id) and
+    return (
+            redis_app.set("active_bogo_id", bogo_id) and
             redis_app.set("sequence_length", sequence_length) and
             redis_app.set("start_date", start_date) and
-            update_iteration_speed(0))
+            update_iteration_speed(0)
+            )
 
 
 def get_stats(bogo_id):
@@ -90,8 +89,8 @@ def about():
     return "nothing here, yet"
 
 
-@flask_app.route("/history")
-def history():
+@flask_app.route("/statistics")
+def statistics():
     return "nothing here, yet"
 
 
@@ -242,7 +241,7 @@ def bogo_main():
 
 def connect_db():
     connection = sqlite3.connect(flask_app.config['DATABASE'])
-    connection.row_factory = sqlite3.Row
+    connection.row_factory = sqlite3.Row # Rows as dict-like objects
     return connection
 
 
