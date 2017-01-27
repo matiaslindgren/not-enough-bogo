@@ -264,6 +264,49 @@ def init_db():
     db.commit()
 
 
+def create_new_bogo(sequence):
+    """
+    Insert a new bogo into the database and redis cache.
+    Return its id.
+    """
+    db = get_db()
+
+    query = "insert into bogos (sequence_length, started) values (?, ?)"
+    data = (
+        len(sequence),
+        datetime.datetime.utcnow().isoformat()
+    )
+    cursor = db.execute(query, data)
+    db.commit()
+
+    bogo_id = cursor.lastrowid
+    if not overwrite_bogo_cache(bogo_id, *data):
+        raise RuntimeError("Failed to write redis cache for bogo {}".format(bogo_id))
+
+    return bogo_id
+
+
+def close_bogo(bogo_id):
+    """
+    Set the finished field of bogo with id bogo_id to now.
+    """
+    db = get_db()
+
+    fetch_query = "select * from bogos where id=?"
+    bogo = execute_and_fetch_one(fetch_query, (bogo_id, ))
+
+    if not bogo:
+        raise RuntimeError("Attempted to close a bogo with id {} but none was found in the database.".format(bogo_id))
+    if bogo['finished']:
+        raise RuntimeError("Attempted to close a bogo with id {} but it already had an end date {}.".format(bogo_id, bogo['finished']))
+
+    query = "update bogos set finished=? where id=?"
+    data = (datetime.datetime.utcnow().isoformat(), bogo_id)
+
+    db.execute(query, data)
+    db.commit()
+
+
 def backup_sorting_state(sequence, random_instance):
     """
     Write sequence, the state of the random module and the date into the database.
@@ -318,50 +361,6 @@ def get_newer_bogo(bogo):
 
 def get_adjacent_bogos(bogo):
     return get_older_bogo(bogo), bogo, get_newer_bogo(bogo)
-
-
-
-def create_new_bogo(sequence):
-    """
-    Insert a new bogo into the database and redis cache.
-    Return its id.
-    """
-    db = get_db()
-
-    query = "insert into bogos (sequence_length, started) values (?, ?)"
-    data = (
-        len(sequence),
-        datetime.datetime.utcnow().isoformat()
-    )
-    cursor = db.execute(query, data)
-    db.commit()
-
-    bogo_id = cursor.lastrowid
-    if not overwrite_bogo_cache(bogo_id, *data):
-        raise RuntimeError("Failed to write redis cache for bogo {}".format(bogo_id))
-
-    return bogo_id
-
-
-def close_bogo(bogo_id):
-    """
-    Set the finished field of bogo with id bogo_id to now.
-    """
-    db = get_db()
-
-    fetch_query = "select * from bogos where id=?"
-    bogo = execute_and_fetch_one(fetch_query, (bogo_id, ))
-
-    if not bogo:
-        raise RuntimeError("Attempted to close a bogo with id {} but none was found in the database.".format(bogo_id))
-    if bogo['finished']:
-        raise RuntimeError("Attempted to close a bogo with id {} but it already had an end date {}.".format(bogo_id, bogo['finished']))
-
-    query = "update bogos set finished=? where id=?"
-    data = (datetime.datetime.utcnow().isoformat(), bogo_id)
-
-    db.execute(query, data)
-    db.commit()
 
 
 
