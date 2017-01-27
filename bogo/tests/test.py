@@ -171,16 +171,16 @@ class Test(unittest.TestCase):
     def test_close_non_existing_bogo(self, bogo_id):
         with main.flask_app.app_context():
             with self.assertRaises(RuntimeError, msg="Closing a bogo with a non-existing id should raise a RuntimeError."):
-                main.close_bogo(bogo_id)
+                main.close_bogo(bogo_id, 0)
 
 
     @given(xs=LIST_RANGE_INTEGERS_SORTED)
     def test_close_already_closed_bogo(self, xs):
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
-            main.close_bogo(bogo_id)
+            main.close_bogo(bogo_id, 0)
             with self.assertRaises(RuntimeError, msg="Closing a bogo which has a finished date should raise a RuntimeError."):
-                main.close_bogo(bogo_id)
+                main.close_bogo(bogo_id, 0)
 
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
@@ -188,7 +188,7 @@ class Test(unittest.TestCase):
         before_insert = datetime.datetime.utcnow()
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
-            main.close_bogo(bogo_id)
+            main.close_bogo(bogo_id, 0)
             db = main.get_db()
             fetch_query = "select * from bogos where id=?"
             bogo = db.execute(fetch_query, (bogo_id, )).fetchone()

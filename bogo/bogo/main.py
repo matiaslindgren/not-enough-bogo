@@ -271,25 +271,27 @@ def init_db():
     db.commit()
 
 
+def execute_and_commit(query, data):
+    db = get_db()
+    cursor = db.execute(query, data)
+    db.commit()
+    return cursor
+
+
 def create_new_bogo(sequence):
     """
     Insert a new bogo into the database and redis cache.
     Return its id.
     """
-    db = get_db()
-
     query = "insert into bogos (sequence_length, started) values (?, ?)"
     data = (
-        len(sequence),
-        datetime.datetime.utcnow().isoformat()
-    )
-    cursor = db.execute(query, data)
-    db.commit()
-
+            len(sequence),
+            datetime.datetime.utcnow().isoformat()
+            )
+    cursor = execute_and_commit(query, data)
     bogo_id = cursor.lastrowid
     if not overwrite_bogo_cache(bogo_id, *data):
         raise RuntimeError("Failed to write redis cache for bogo {}".format(bogo_id))
-
     return bogo_id
 
 
@@ -297,8 +299,6 @@ def close_bogo(bogo_id, total_iterations):
     """
     Update bogo with finished date set to now and total_iterations given as parameter.
     """
-    db = get_db()
-
     fetch_query = "select * from bogos where id=?"
     bogo = execute_and_fetch_one(fetch_query, (bogo_id, ))
 
@@ -309,9 +309,10 @@ def close_bogo(bogo_id, total_iterations):
 
     query = "update bogos set finished=? where id=?"
     data = (datetime.datetime.utcnow().isoformat(), bogo_id)
-
-    db.execute(query, data)
-    db.commit()
+    execute_and_commit(query, data)
+    query = "update bogos set iterations=? where id=?"
+    data = (total_iterations, bogo_id)
+    execute_and_commit(query, data)
 
 
 def backup_sorting_state(sequence, random_instance):
@@ -319,15 +320,13 @@ def backup_sorting_state(sequence, random_instance):
     Write sequence, the state of the random module and the date into the database.
     Returns the id of the inserted backup row.
     """
-    db = get_db()
     query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
     backup_data = (
-        repr(sequence),
-        repr(random_instance.getstate()),
-        datetime.datetime.utcnow().isoformat()
-    )
-    cursor = db.execute(query, backup_data)
-    db.commit()
+            repr(sequence),
+            repr(random_instance.getstate()),
+            datetime.datetime.utcnow().isoformat()
+            )
+    cursor = execute_and_commit(query, backup_data)
     return cursor.lastrowid
 
 
