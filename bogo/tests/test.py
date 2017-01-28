@@ -41,7 +41,6 @@ mock_redis_app = fakeredis.FakeStrictRedis(
     decode_responses=config.REDIS_DECODE_RESPONSES
 )
 
-@mock.patch('bogo.main.redis_app', mock_redis_app)
 class Test(unittest.TestCase):
 
     # range(1, n) instances where 2 <= n <= 3000 is random
@@ -60,6 +59,7 @@ class Test(unittest.TestCase):
     SQL_MAX_INT = 2**63-1
     DATABASE_ID_INTEGERS = strategies.integers(min_value=1, max_value=SQL_MAX_INT)
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     def setUp(self):
         self.db_file_desc, main.flask_app.config['DATABASE'] = tempfile.mkstemp()
         main.flask_app.config['TESTING'] = True
@@ -115,6 +115,7 @@ class Test(unittest.TestCase):
             return db.execute(fetch_query).fetchone()
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_create_new_bogo(self, xs):
         before_insert = datetime.datetime.utcnow()
@@ -174,6 +175,7 @@ class Test(unittest.TestCase):
                 main.close_bogo(bogo_id, 0)
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SORTED)
     def test_close_already_closed_bogo(self, xs):
         with main.flask_app.app_context():
@@ -183,6 +185,7 @@ class Test(unittest.TestCase):
                 main.close_bogo(bogo_id, 0)
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_close_open_bogo(self, xs):
         before_insert = datetime.datetime.utcnow()
@@ -271,6 +274,7 @@ class Test(unittest.TestCase):
             )
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_sorts_unsorted_sequence(self, xs):
         with main.flask_app.app_context():
@@ -278,6 +282,7 @@ class Test(unittest.TestCase):
         self.assertTrue(main.is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_logs_correctly(self, xs):
         expected_patterns = (
@@ -299,6 +304,8 @@ class Test(unittest.TestCase):
             patterns=expected_patterns
         )
 
+
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_creates_a_new_bogo(self, xs):
         newest_before = self._get_newest_bogo()
@@ -319,6 +326,7 @@ class Test(unittest.TestCase):
                 "sort_until_done did not insert a new bogo."
             )
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_creates_a_backup(self, xs):
         date_before = datetime.datetime.utcnow()
@@ -346,6 +354,7 @@ class Test(unittest.TestCase):
             "The timedelta of right before calling sort_until_done, compared to the saved date in the newest backup was greater than 5 seconds."
         )
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
     def test_sort_until_done_closes_the_created_bogo(self, xs):
         before_sort = datetime.datetime.utcnow()
@@ -407,6 +416,7 @@ class Test(unittest.TestCase):
         )
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
     @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
@@ -464,8 +474,21 @@ class Test(unittest.TestCase):
         self.setUp()
 
 
-    def test_index_route_redirects(self):
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
+    def test_index_404(self):
         with main.flask_app.app_context():
+            response = self.app.get('/')
+            self.assertEqual(
+                response.status_code,
+                404,
+                "Index should 404 on empty database and cache"
+            )
+
+
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
+    def test_index_route_redirects_if_redis_has_active_bogo(self):
+        with main.flask_app.app_context():
+            mock_redis_app.set("active_bogo_id", 1)
             response = self.app.get('/')
             self.assertEqual(
                 response.status_code,
@@ -485,6 +508,7 @@ class Test(unittest.TestCase):
             )
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(bogo_id=DATABASE_ID_INTEGERS)
     def test_get_bogo_by_id_or_404_with_nonexisting_id_throws_404(self, bogo_id):
         with main.flask_app.app_context():
