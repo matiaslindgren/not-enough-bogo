@@ -260,12 +260,13 @@ def get_db():
 
 def init_db():
     """
-    Run the sql schema script on the database.
+    Run the sql schema script on the database and flushes the redis cache.
     """
     db = get_db()
     with flask_app.open_resource(flask_app.config['DATABASE_SCHEMA'], mode='r') as schema:
         db.cursor().executescript(schema.read())
     db.commit()
+    redis_app.flushall()
 
 
 def execute_and_commit(query, data):
