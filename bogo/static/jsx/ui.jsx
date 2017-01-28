@@ -204,11 +204,16 @@ function Table(props) {
           <tbody>
             <Row label="Sequence length" value={props.sequenceLength} />
             {(!props.endDate && props.currentSpeed) &&
-              <Row label="Current speed" value={Math.round(props.currentSpeed) + " shuffles per second"}
-                />
+              <TooltipRow
+                label="Current speed"
+                value={Math.round(props.currentSpeed) + " shuffles per second"}
+                tooltip="The actual amount of iterations at the server right now"/>
             }
             <Row label="Total amount of shuffles" value={props.totalIterations} />
-            <Row label="Sort probability" value={SORT_PROBABILITY[props.sequenceLength]}/>
+            <TooltipRow
+                label="Sort probability"
+                value={SORT_PROBABILITY[props.sequenceLength]}
+                tooltip="Assuming equal probability for generating any permutation"/>
             <Row label="Sorting started at" value={startDateString} />
             <Row label="Sorting finished at " value={endDateString} />
           </tbody>
@@ -228,8 +233,20 @@ function Table(props) {
 function Row(props) {
   return (
     <tr>
-      <td className="col-xs-6">{props.label}</td>
-      <td className="col-xs-6">{props.value}</td>
+      <td>{props.label}</td>
+      <td>{props.value}</td>
+    </tr>
+  );
+}
+
+
+function TooltipRow(props) {
+  return (
+    <tr data-toggle="tooltip"
+        data-placement="bottom"
+        title={props.tooltip}>
+      <td>{props.label}</td>
+      <td>{props.value}</td>
     </tr>
   );
 }
