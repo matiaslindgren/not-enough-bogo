@@ -5,7 +5,7 @@ import unittest
 import unittest.mock as mock
 import fakeredis
 import werkzeug
-from hypothesis import strategies, given, settings, assume
+from hypothesis import strategies, given, settings
 import random
 import os
 import ast
