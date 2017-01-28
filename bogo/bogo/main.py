@@ -33,20 +33,20 @@ def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
     """ Clear redis cache and insert new values.  """
     redis_app.flushall()
     return (
-            redis_app.set("active_bogo_id", bogo_id) and
-            redis_app.set("sequence_length", sequence_length) and
-            redis_app.set("start_date", start_date) and
-            update_iteration_speed(0) and
-            update_total_iterations(0)
-            )
+        redis_app.set("active_bogo_id", bogo_id) and
+        redis_app.set("sequence_length", sequence_length) and
+        redis_app.set("start_date", start_date) and
+        update_iteration_speed(0) and
+        update_total_iterations(0)
+    )
 
 def get_cached_stats():
     """ Retrieve current sorting state from the redis cache.  """
     return {
-            "currentSpeed":     ast.literal_eval(redis_app.get("iter_speed")),
-            "totalIterations":  ast.literal_eval(redis_app.get("total_iterations")),
-            "activeId":         get_active_bogo_id(),
-            }
+        "currentSpeed":     ast.literal_eval(redis_app.get("iter_speed")),
+        "totalIterations":  ast.literal_eval(redis_app.get("total_iterations")),
+        "activeId":         get_active_bogo_id(),
+    }
 
 def get_full_stats(bogo_id):
     stats = get_db_stats(bogo_id)
@@ -85,25 +85,30 @@ def source():
 def view_bogo(bogo_id):
     get_bogo_by_id_or_404(bogo_id)
     render_context = {
-            "bogo_id":          bogo_id,
-            "bogo_stats_url":   flask.request.base_url + "/statistics.json",
-            "active_state_url": flask.url_for("active_state")
-            }
+            "bogo_id":              bogo_id,
+            "bogo_stats_url":       flask.request.base_url + ".json",
+            "active_state_url":     flask.url_for("active_state"),
+            "max_polling_interval": 1000, # TODO maybe this could be calculated from the server load?
+    }
     return flask.render_template('index.html', **render_context)
 
 
-@flask_app.route("/bogo/<int:bogo_id>/statistics.json")
+@flask_app.route("/bogo/<int:bogo_id>.json")
 def bogo_statistics(bogo_id):
     """ Return full statistics for a bogo with given id as JSON. """
-    stats = get_full_stats(bogo_id)
+    stats = {
+        'links': {'self': flask.request.base_url},
+        'data': get_full_stats(bogo_id)
+    }
 
     bogo = get_bogo_by_id_or_404(bogo_id)
     prev_bogo, _, next_bogo = get_adjacent_bogos(bogo)
 
+    # TODO add root url
     if prev_bogo:
-        stats['previousUrl'] = flask.url_for("view_bogo", bogo_id=prev_bogo['id'])
+        stats['links']['previous'] = flask.url_for("view_bogo", bogo_id=prev_bogo['id'])
     if next_bogo:
-        stats['nextUrl'] = flask.url_for("view_bogo", bogo_id=next_bogo['id'])
+        stats['links']['next'] = flask.url_for("view_bogo", bogo_id=next_bogo['id'])
 
     return flask.jsonify(**stats)
 
@@ -282,9 +287,9 @@ def create_new_bogo(sequence):
     """
     query = "insert into bogos (sequence_length, started) values (?, ?)"
     data = (
-            len(sequence),
-            datetime.datetime.utcnow().isoformat()
-            )
+        len(sequence),
+        datetime.datetime.utcnow().isoformat()
+    )
     cursor = execute_and_commit(query, data)
     bogo_id = cursor.lastrowid
     if not overwrite_bogo_cache(bogo_id, *data):
@@ -319,10 +324,10 @@ def backup_sorting_state(sequence, random_instance):
     """
     query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
     backup_data = (
-            repr(sequence),
-            repr(random_instance.getstate()),
-            datetime.datetime.utcnow().isoformat()
-            )
+        repr(sequence),
+        repr(random_instance.getstate()),
+        datetime.datetime.utcnow().isoformat()
+    )
     cursor = execute_and_commit(query, backup_data)
     return cursor.lastrowid
 
@@ -331,12 +336,12 @@ def get_db_stats(bogo_id):
     """ Retrieve sorting statistics for bogo with given id from the database.  """
     bogo_row = get_bogo_by_id_or_404(bogo_id)
     return  {
-            "startDate":      bogo_row['started'],
-            "endDate":        bogo_row['finished'],
-            "sequenceLength": bogo_row['sequence_length'],
-            "totalIterations":bogo_row['iterations'],
-            "currentSpeed":   0
-            }
+        "startDate":       bogo_row['started'],
+        "endDate":         bogo_row['finished'],
+        "sequenceLength":  bogo_row['sequence_length'],
+        "totalIterations": bogo_row['iterations'],
+        "currentSpeed":    0
+    }
 
 
 def get_bogo_by_id_or_404(bogo_id):
