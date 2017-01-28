@@ -244,7 +244,7 @@ def connect_db():
 
 
 @flask_app.teardown_appcontext
-def _close_db():
+def _close_db(error):
     if hasattr(flask.g, config.APP_CONTEXT_DATABASE_NAME):
         getattr(flask.g, config.APP_CONTEXT_DATABASE_NAME).close()
 
