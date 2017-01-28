@@ -87,7 +87,6 @@ class BogoController extends React.Component {
         // try again after 2t ms.
         const t2 = 2*t;
         setTimeout(_ => redrawUntilNoErrors(t2), t2);
-        console.log("boom");
       }
     }
     redrawUntilNoErrors(10);
