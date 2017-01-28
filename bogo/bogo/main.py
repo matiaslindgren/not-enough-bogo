@@ -98,22 +98,25 @@ def view_bogo(bogo_id):
     return flask.render_template('index.html', **render_context)
 
 
+def full_view_for_bogo_id(bogo_id):
+    return flask.url_for("view_bogo", bogo_id=bogo_id, _external=True)
+
+
 @flask_app.route("/bogo/<int:bogo_id>.json")
 def bogo_statistics(bogo_id):
     """ Return full statistics for a bogo with given id as JSON. """
     stats = {
-        'links': {'self': flask.request.base_url},
+        'links': {'self': full_view_for_bogo_id(bogo_id)},
         'data': get_full_stats(bogo_id)
     }
 
     bogo = get_bogo_by_id_or_404(bogo_id)
     prev_bogo, _, next_bogo = get_adjacent_bogos(bogo)
 
-    # TODO add root url
     if prev_bogo:
-        stats['links']['previous'] = flask.url_for("view_bogo", bogo_id=prev_bogo['id'])
+        stats['links']['previous'] = full_view_for_bogo_id(prev_bogo['id'])
     if next_bogo:
-        stats['links']['next'] = flask.url_for("view_bogo", bogo_id=next_bogo['id'])
+        stats['links']['next'] = full_view_for_bogo_id(next_bogo['id'])
 
     return flask.jsonify(**stats)
 
