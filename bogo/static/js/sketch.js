@@ -1,14 +1,18 @@
 
+const SKETCH_CONFIG = {
+  spacing:      1.1,
+  yPadding:     60,
+}
 
-class SequenceSketch {
+
+class AnimationWrapper {
   constructor(settings) {
     this.containerId = settings.containerId;
-    this.height =      settings.canvasHeight;
-    this.width =       settings.canvasWidth;
-    this.spacing =     settings.spacing;
     this.columns =     settings.columns;
-    this.yPadding =    settings.yPadding;
     this.shufflin =    settings.shufflin;
+
+    this.spacing =     SKETCH_CONFIG.spacing;
+    this.yPadding =    SKETCH_CONFIG.yPadding;
 
     this.sequence = _.range(1, this.columns+1);
   }
