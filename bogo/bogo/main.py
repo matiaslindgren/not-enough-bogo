@@ -63,7 +63,6 @@ def get_full_stats(bogo_id):
 def index():
     bogo_id = get_active_bogo_id()
     if not bogo_id:
-        print("WARNING: no active bogo in redis cache!")
         bogo = get_newest_bogo()
         if not bogo or 'id' not in bogo:
             flask.abort(404)
