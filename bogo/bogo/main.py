@@ -23,10 +23,11 @@ bogo_random.seed(config.RANDOM_SEED)
 def update_iteration_speed(iter_per_second):
     return redis_app.set("iter_speed", iter_per_second)
 
+def update_total_iterations(total_iterations):
+    return redis_app.set("total_iterations", total_iterations)
 
 def get_active_bogo_id():
     return redis_app.get("active_bogo_id")
-
 
 def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
     """ Clear redis cache and insert new values.  """
@@ -35,17 +36,17 @@ def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
             redis_app.set("active_bogo_id", bogo_id) and
             redis_app.set("sequence_length", sequence_length) and
             redis_app.set("start_date", start_date) and
-            update_iteration_speed(0)
+            update_iteration_speed(0) and
+            update_total_iterations(0)
             )
-
 
 def get_cached_stats():
     """ Retrieve current sorting state from the redis cache.  """
     return {
-            "currentSpeed": ast.literal_eval(redis_app.get("iter_speed")),
-            "activeId":     get_active_bogo_id(),
+            "currentSpeed":     ast.literal_eval(redis_app.get("iter_speed")),
+            "totalIterations":  ast.literal_eval(redis_app.get("total_iterations")),
+            "activeId":         get_active_bogo_id(),
             }
-
 
 def get_full_stats(bogo_id):
     stats = get_db_stats(bogo_id)
@@ -188,6 +189,7 @@ def sort_until_done(sequence, from_backup=False):
             # This should be checked outside the task in a black box manner.
             # Though, then it requires an additional thread
             update_iteration_speed(iter_speed_resolution/cycle_total_time)
+            update_total_iterations(total_iterations)
             cycle_total_time = 0.0
 
     celery_logger.info('Done sorting bogo {} in {} iterations.'.format(this_bogo_id, total_iterations))
@@ -336,6 +338,7 @@ def get_db_stats(bogo_id):
             "startDate":      bogo_row['started'],
             "endDate":        bogo_row['finished'],
             "sequenceLength": bogo_row['sequence_length'],
+            "totalIterations":bogo_row['iterations'],
             "currentSpeed":   0
             }
 

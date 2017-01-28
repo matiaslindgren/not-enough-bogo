@@ -14,6 +14,7 @@ class Bogo extends React.Component {
    * @param {string} props.activeStateUrl - JSON API URL to be polled for changes in state.
    * @param {string} props.startDate - Date when sorting was started.
    * @param {string} props.endDate - (Optional) Date when sorting ended. NOTE: the presence of this parameter means the sequence should be considered sorted.
+   * @param {string} props.iterations - (Optional) Amount of total iterations used before sequence was sorted.
    * @param {string} props.stopAnimationHandle
    * @param {string} props.previousUrl - URL for pager previous button.
    * @param {string} props.nextUrl - URL for pager next button.
@@ -28,14 +29,16 @@ class Bogo extends React.Component {
        initState = {
          stateName: this.generateActiveName(),
          endDate: "Maybe some day",
-         currentSpeed: "Loading..."
+         currentSpeed: "Loading...",
+         totalIterations: "Loading..."
        }
      }
      else {
        initState = {
          stateName: "Sorted",
          endDate: props.endDate,
-         currentSpeed: "-"
+         currentSpeed: "-",
+         totalIterations: props.iterations
        }
      }
      this.state = Object.assign(
@@ -74,6 +77,7 @@ class Bogo extends React.Component {
   componentDidMount() {
     if (this.state.stateName !== "Sorted")
       this.timerID = setInterval(_ => this.refreshState(), 1000);
+    //this.refreshState(); //TODO
   }
 
   /** The sequence is sorted, stop refresh timer. */
@@ -102,6 +106,7 @@ class Bogo extends React.Component {
             stateName:       "Sorted",
             stateNameSuffix: "",
             endDate:         fullData.endDate,
+            totalIterations: fullData.totalIterations,
             currentSpeed:    "-",
             previousUrl:     fullData.previousUrl,
             nextUrl:         fullData.nextUrl
@@ -113,7 +118,8 @@ class Bogo extends React.Component {
         const currentSuffix = this.state.stateNameSuffix;
         this.setState({
           currentSpeed:    Math.round(data.currentSpeed) + " shuffles per second",
-          stateNameSuffix: currentSuffix.length < 4 ? currentSuffix + "." : " "
+          stateNameSuffix: currentSuffix.length < 4 ? currentSuffix + "." : " ",
+          totalIterations: data.totalIterations,
         });
       }
     });
@@ -131,6 +137,7 @@ class Bogo extends React.Component {
                endDate=        {this.state.endDate}
                sequenceLength= {this.props.sequenceLength}
                currentSpeed=   {this.state.currentSpeed}
+               totalIterations={this.state.totalIterations}
         />
         <Pager previousUrl=    {this.state.previousUrl}
                nextUrl=        {this.state.nextUrl}
@@ -173,6 +180,7 @@ function Table(props) {
             <Row label="Sequence length"     value={props.sequenceLength} />
             <Row label="Sorting started at"  value={props.startDate} />
             <Row label="Sorting finished at" value={props.endDate} />
+            <Row label="Total amount of shuffles" value={props.totalIterations} />
           </tbody>
         </table>
       </div>
@@ -254,6 +262,7 @@ function uiMain() {
             activeStateUrl=     {staticData.minimalApiUrl}
             startDate=          {data.startDate}
             endDate=            {data.endDate}
+            iterations=         {data.totalIterations}
             sequenceLength=     {data.sequenceLength}
             stopAnimationHandle={(_ => animation.stopShuffling())}
             previousUrl=        {data.previousUrl}
@@ -263,18 +272,18 @@ function uiMain() {
 
     let p5app = new p5(animation.p5sketch());
     // hi, my name is hacky hackerpants and this is hack-ass
-    const makep5 = function(t) {
+    const redrawUntilNoErrors = function(t) {
       try {
         // Trigger redraw
         p5app.windowResized();
       } catch(err) {
         // Something was missing and everything exploded,
         // try again after 2t ms.
-        setTimeout(makep5, 2*t);
+        setTimeout(redrawUntilNoErrors, 2*t);
       }
       // Nothing exploded, recursion stops
     }
-    makep5(10);
+    redrawUntilNoErrors(10);
   });
 }
 
