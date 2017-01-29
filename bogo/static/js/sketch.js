@@ -1,27 +1,28 @@
 
 const SKETCH_CONFIG = {
-  spacing:      1.1,
-  yPadding:     60,
+  spacing:      0.05,
+  yPadding:     0,
+  backgroundAlpha: 30
 }
 
 
 class AnimationWrapper {
   constructor(settings) {
-    this.containerId = settings.containerId;
-    this.columns     = settings.columns;
-    this.sorted      = settings.sorted;
+    this.containerId     = settings.containerId;
+    this.columns         = settings.columns;
+    this.sorted          = settings.sorted;
 
-    this.shufflin    = !this.sorted;
+    this.spacing         = 1.0 + ((settings.spacing !== undefined) ? settings.spacing : SKETCH_CONFIG.spacing);
+    this.yPadding        = (settings.yPadding !== undefined) ? settings.yPadding : SKETCH_CONFIG.yPadding;
+    this.backgroundAlpha = (settings.backgroundAlpha !== undefined) ? settings.backgroundAlpha : SKETCH_CONFIG.backgroundAlpha;
 
-    this.spacing     = SKETCH_CONFIG.spacing;
-    this.yPadding    = SKETCH_CONFIG.yPadding;
-
-    this.sequence    = _.range(1, this.columns+1);
+    this.shufflin        = !this.sorted;
+    this.sequence        = _.range(1, this.columns+1);
   }
 
   // Switches to alter the state of the returned p5 instance
 
-  /** Stop shuffling columns but don't stop looping. */
+  /** Stop shuffling columns. */
   stopShuffling() {
     this.shufflin = false;
   }
@@ -42,23 +43,22 @@ class AnimationWrapper {
 
     const s = function(p) {
 
-      let sketchWidth = wrapper.width;
-      let sketchHeight = wrapper.height;
+      // Optimizations
+      let sketchWidth;
+      let sketchHeight;
+      let columnWidth;
+      let columnHeightStep;
 
-      const getColumnWidth = function() {
-        return sketchWidth/wrapper.columns/wrapper.spacing;
+      const refreshSizes = function() {
+        const container = $('#' + wrapper.containerId);
+
+        sketchWidth      = container.width();
+        sketchHeight     = container.height();
+        columnWidth      = (wrapper.spacing/wrapper.columns) + sketchWidth/wrapper.columns/wrapper.spacing;
+        columnHeightStep = (sketchHeight - wrapper.yPadding)/wrapper.columns;
       }
-
-      const getColumnHeightStep = function() {
-        return wrapper.spacing*(sketchHeight - wrapper.yPadding)/wrapper.columns;
-      }
-
-      let columnWidth = getColumnWidth();
-      let columnHeightStep = getColumnHeightStep();
 
       let sequence = wrapper.sequence;
-
-      let canvas = null;
 
       const shuffle = function() {
         sequence = _.shuffle(sequence);
@@ -72,30 +72,27 @@ class AnimationWrapper {
         p.noStroke();
         p.fill(150);
 
-        for (let i = 0; i < sequence.length; i++) {
+        _.each(sequence, (num, i) => {
           const x = wrapper.spacing*i*columnWidth;
-          const height = sequence[i]*columnHeightStep;
+          const height = num*columnHeightStep;
           const y = sketchHeight - height;
           p.rect(x, y, columnWidth, height);
-        }
-      }
-
-      const resizeSketch = function(newWidth, newHeight) {
-        sketchHeight = newHeight;
-        sketchWidth = newWidth;
-        columnWidth = getColumnWidth();
-        columnHeightStep = getColumnHeightStep();
+        });
       }
 
       p.setup = function() {
-        canvas = p.createCanvas(sketchWidth, sketchHeight);
+        const canvas = p.createCanvas();
         canvas.parent(wrapper.containerId);
+
+        refreshSizes();
+        p.resizeCanvas(sketchWidth, sketchHeight);
+
         shuffle();
         p.loop();
       }
 
       p.draw = function() {
-        p.background(255, 40);
+        p.background(255, wrapper.backgroundAlpha);
 
         if (wrapper.shufflin) {
           shuffle();
@@ -110,12 +107,9 @@ class AnimationWrapper {
       }
 
       p.windowResized = function() {
-        const canvasParent = $(canvas.parent());
-        resizeSketch(canvasParent.width(), canvasParent.height());
-
+        refreshSizes();
         p.resizeCanvas(sketchWidth, sketchHeight);
-
-        if (!wrapper.shufflin)
+        if (wrapper.sorted)
           p.draw();
       }
     }
