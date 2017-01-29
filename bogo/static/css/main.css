@@ -56,16 +56,24 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+body {
+  font-family: serif;
+}
+
 #body-container img {
   margin-bottom: 20px;
 }
 
-#body-container {
-  max-width: 900px;
+.pager li>a,
+.pager li>span {
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
 }
 
-#body-container * {
-  max-width: 100%;
+.text-container {
+  max-width: 60%;
 }
 
 #sketch-container {
@@ -73,10 +81,10 @@ textarea {
   margin-bottom: 20px;
 }
 
-/* .text-container { */
-/*   margin-left: 20%; */
-/*   margin-top: 130px; */
-/* } */
+.text-container {
+  margin-left: 20%;
+  margin-top: 130px;
+}
 
 /* .text-container * { */
 /*   max-width: 800px; */
