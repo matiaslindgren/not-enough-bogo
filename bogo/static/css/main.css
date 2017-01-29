@@ -70,16 +70,26 @@ body {
   margin-bottom: 30px;
 }
 
-#dummy-sort-container,
 #sketch-container {
   min-height: 400px;
   width: 100%;
   margin-bottom: 20px;
 }
 
-#body-container.text-container {
+#dummy-sort-container {
+  height: 70vh;
+  max-width: 100%;
+  width: 100vw;
+  margin-bottom: 20px;
+}
+
+.text-container {
   max-width: 420px;
   text-align: justify;
+}
+
+.paragraph-container {
+  margin-bottom: 40px;
 }
 
 /* TODO: fix the navbar centering hack */

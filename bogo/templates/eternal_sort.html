@@ -1,26 +1,17 @@
 {% extends "index.html" %}
 {% block body_content %}
 
-
-<div class="container" id="body-container">
-
-  <div class="container" id="dummy-sort-container">
-  </div>
-
-  <div class="paragraph-container">
-
-    <p>
-    Content is on its way...
-    </p>
-
-  </div>
-
+<div class="container" id="dummy-sort-container">
 </div>
-
 
 <script id="backend-render-context" type="application/json">
 { "columnCount": "{{ column_count }}" }
 </script>
+
+<div class="container ">
+  <button type="button" onclick="toggleFullScreen()">Fullscreen</button>
+</div>
+
 <script src="{{ url_for('static', filename='js/sketch.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dummySort.js') }}"></script>
 {% endblock %}
