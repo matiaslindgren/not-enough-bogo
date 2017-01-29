@@ -68,19 +68,6 @@ class BogoController extends React.Component {
 
     // Start animation
     let p5app = new p5(this.animationWrapper.p5sketch());
-    // hi, my name is hacky hackerpants and this is hack-ass
-    const redrawUntilNoErrors = function(t) {
-      try {
-        // Trigger redraw
-        p5app.windowResized();
-      } catch(err) {
-        // Something was missing and everything exploded,
-        // try again after 2t ms.
-        const t2 = 2*t;
-        setTimeout(_ => redrawUntilNoErrors(t2), t2);
-      }
-    }
-    redrawUntilNoErrors(10);
   }
 
   /** The sequence is sorted, stop refresh timer. */
