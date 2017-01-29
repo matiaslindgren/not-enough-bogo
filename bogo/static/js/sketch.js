@@ -38,25 +38,25 @@ class AnimationWrapper {
 
   /** Return a p5 instance with access to the state of AnimationWrapper. */
   p5sketch() {
-    const sketch = this;
+    const wrapper = this;
 
     const s = function(p) {
 
-      let sketchWidth = sketch.width;
-      let sketchHeight = sketch.height;
+      let sketchWidth = wrapper.width;
+      let sketchHeight = wrapper.height;
 
       const getColumnWidth = function() {
-        return sketchWidth/sketch.columns/sketch.spacing;
+        return sketchWidth/wrapper.columns/wrapper.spacing;
       }
 
       const getColumnHeightStep = function() {
-        return sketch.spacing*(sketchHeight - sketch.yPadding)/sketch.columns;
+        return wrapper.spacing*(sketchHeight - wrapper.yPadding)/wrapper.columns;
       }
 
       let columnWidth = getColumnWidth();
       let columnHeightStep = getColumnHeightStep();
 
-      let sequence = sketch.sequence;
+      let sequence = wrapper.sequence;
 
       let canvas = null;
 
@@ -73,7 +73,7 @@ class AnimationWrapper {
         p.fill(150);
 
         for (let i = 0; i < sequence.length; i++) {
-          const x = sketch.spacing*i*columnWidth;
+          const x = wrapper.spacing*i*columnWidth;
           const height = sequence[i]*columnHeightStep;
           const y = sketchHeight - height;
           p.rect(x, y, columnWidth, height);
@@ -89,20 +89,21 @@ class AnimationWrapper {
 
       p.setup = function() {
         canvas = p.createCanvas(sketchWidth, sketchHeight);
-        canvas.parent(sketch.containerId);
+        canvas.parent(wrapper.containerId);
+        shuffle();
         p.loop();
       }
 
       p.draw = function() {
         p.background(255, 40);
 
-        if (sketch.shufflin) {
+        if (wrapper.shufflin) {
           shuffle();
         }
-        else {
+        if (wrapper.sorted) {
+          p.noLoop();
           p.clear(); // Background is opaque
           sort();
-          p.noLoop();
         }
 
         drawSequence();
@@ -114,7 +115,7 @@ class AnimationWrapper {
 
         p.resizeCanvas(sketchWidth, sketchHeight);
 
-        if (!sketch.shufflin)
+        if (!wrapper.shufflin)
           p.draw();
       }
     }
