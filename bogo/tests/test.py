@@ -76,12 +76,12 @@ class Test(unittest.TestCase):
         with main.flask_app.app_context():
             db = main.get_db()
             insert_query = "insert into bogos (sequence_length, started) values (?, ?)"
-            db.execute(insert_query, (len(xs), datetime.datetime.utcnow()))
+            db.execute(insert_query, (len(xs), datetime.datetime.utcnow().isoformat()))
             db.commit()
 
     def _backup_and_retrieve(self, xs):
         with main.flask_app.app_context():
-            main.backup_sorting_state(xs, self.random)
+            main.backup_sorting_state(xs, self.random, 0)
             return main.get_previous_state_all()
 
     def _get_stringio_logger(self):
@@ -153,11 +153,6 @@ class Test(unittest.TestCase):
             self.assertEqual(
                 str(len(xs)),
                 main.redis_app.get("sequence_length"),
-                redis_key_not_set_msg
-            )
-            self.assertEqual(
-                db_date.isoformat(),
-                main.redis_app.get("start_date"),
                 redis_key_not_set_msg
             )
             self.assertEqual(
@@ -387,11 +382,11 @@ class Test(unittest.TestCase):
             "min length: {}".format(mock_min_length),
             "max length: {}".format(mock_max_length),
             "backups? found",
-            "^" + re.escape("Call sort_until_done with: {}".format(expected_seq))
+            "^" + re.escape("Cycle {}, call sort_until_done with: {}".format(0, expected_seq))
         )
         self._assertFunctionLogs(
             main.bogo_main,
-            (),
+            (1,),
             logger_name="bogo.main.celery_logger",
             patterns=expected_patterns
         )
@@ -406,11 +401,11 @@ class Test(unittest.TestCase):
             "^.",
             "^.",
             "^No backups found, starting a new bogo cycle.",
-            "^" + re.escape("Call sort_until_done with: {}".format(expected_seq))
+            "^" + re.escape("Cycle {}, call sort_until_done with: {}".format(0, expected_seq))
         )
         self._assertFunctionLogs(
             main.bogo_main,
-            (),
+            (1,),
             logger_name="bogo.main.celery_logger",
             patterns=expected_patterns
         )
@@ -433,7 +428,7 @@ class Test(unittest.TestCase):
         )
         self._assertFunctionLogs(
             main.bogo_main,
-            (),
+            (0,),
             logger_name="bogo.main.celery_logger",
             patterns=expected_patterns
         )
@@ -489,6 +484,7 @@ class Test(unittest.TestCase):
     def test_index_route_redirects_if_redis_has_active_bogo(self):
         with main.flask_app.app_context():
             mock_redis_app.set("active_bogo_id", 1)
+            mock_redis_app.set("iter_speed", 1)
             response = self.app.get('/')
             self.assertEqual(
                 response.status_code,
@@ -516,22 +512,22 @@ class Test(unittest.TestCase):
                 main.get_bogo_by_id_or_404(bogo_id)
 
 
-    @unittest.skip("not implemented")
-    def test_bogo_starts_on_command(self):
-        self.fail("not implemented")
+    # @unittest.skip("not implemented")
+    # def test_bogo_starts_on_command(self):
+    #     self.fail("not implemented")
 
-    @unittest.skip("not implemented")
-    def test_get_cached_stats_when_they_exist(self):
-        self.fail("not implemented")
+    # @unittest.skip("not implemented")
+    # def test_get_cached_stats_when_they_exist(self):
+    #     self.fail("not implemented")
 
 
-    @unittest.skip("not implemented")
-    def test_get_database_stats_when_empty(self):
-        self.fail("not implemented")
+    # @unittest.skip("not implemented")
+    # def test_get_database_stats_when_empty(self):
+    #     self.fail("not implemented")
 
-    @unittest.skip("not implemented")
-    def test_get_database_stats_when_they_exist(self):
-        self.fail("not implemented")
+    # @unittest.skip("not implemented")
+    # def test_get_database_stats_when_they_exist(self):
+    #     self.fail("not implemented")
 
 
     def tearDown(self):
