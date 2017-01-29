@@ -1,6 +1,13 @@
 {% extends "layout.html" %}
 {% block body_content %}
 
+{% block head_includes %}
+
+<script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+{% endblock %}
+
+
 <div class="container text-container" id="body-container">
 
   <div class="header-container">
@@ -30,7 +37,32 @@
     <p>
     This ridiculousness may rightly be dismissed as inefficiency but I find all kinds of dadaistic stupidity quite calming due to their non-belligerent and casual nature.
     Moreover, the simple thought of optimizing a multi-pivot, in-place quicksort algorithm to cover all possible edge-cases, while sobbingly tinkering with 9 different C++ pointers due to off-by-one errors makes me want to sell all of my electronic equipment and start a new life as a panda baby, rolling around, gnawing on interesting objects.
-    Besides, <a href="{{ url_for('eternal_sort') }}">this random shuffle</a> of 10 000 elements looks pretty awesome.
+    </p>
+
+    <p>
+    Speaking of interesting, what are the chances of a randomized bogosort finding a permutation where all elements are in ascending order?
+    If we have a sequence of 10 integers: \(1, 2, 3, 4, 5, 6, 7, 8, 9, 10\), then the total amount of permutations is: $$10! = 3628800.$$
+    If we assume the bogosort algorithm generates any distinct permutation with equal probability, then the probability of hitting the one correct, sorted permutation is approximately: $$\frac{1}{10!} = 2.76\cdot10^{-7} \approx 0.0000003.$$
+    I initially planned on sorting sequences starting from \(1, 2, 3, ..., 10\); then \(1, 2, 3, ..., 20\); all the way up to \(1, 2, 3, ..., 100\).
+    However, there is some inherent awkwardness with this plan.
+    The total amount of permutations of the sequence \(1, 2, 3, ..., 100\) is:  $$100! = 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000.$$
+    which is approximately \(9.33\cdot10^{157}\).
+    If we still assume the bogosort algorithm generates any of the \(100!\) permutations with equal probability, then the probability of finding the sorted permutation is approximately: $$\frac{1}{100!} = 9.33\cdot10^{-157} \approx 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003.$$
+    I bet higher odds exist with a high probability (I came here to gamble and make puns like a complete idiot and I'm all out of coins). </p>
+
+    <p>
+    Consider a lottery where you choose 7 unique numbers out of 40 different choices.
+    If exactly these 7 numbers are drawn, you win a shitload of money, also called the jackpot.
+    All the different ways of choosing 7 unique numbers from the 40 different choices equals to:
+    $${40\choose{7}} = 18643560.$$
+    So the probability of choosing exactly the same 7 numbers as you have chosen is approximately:
+    $$\frac{1}{40\choose{7}} = 5.4\cdot10^{-8} \approx 0.00000005.$$
+    Wrapping up, the probability of a randomized bogosort algorithm sorting a sequence of 100 unique integers to find the permutation of all integers in ascending order is the same as winning the jackpot using the same set of 7 numbers
+    $$\frac{\frac{1}{40\choose{7}}}{\frac{1}{100!}} = \frac{5.4\cdot10^{-8}}{9.33\cdot10^{-157}} = 5005815168559231658018125952104494304939067958887896628724695357864980205703107710017037038288075874165368680703534676099369688930394944229128634630144$$
+    times.</p>
+
+    <p>
+    If these numbers do not convince you of the absurdity of this web page, try watching an <a href="{{ url_for('eternal_sort') }}">animation</a> of a bogosort of 10 000 elements. It is rather calming, in fact. Almost like listening to the rain.
     </p>
 
   </div>
