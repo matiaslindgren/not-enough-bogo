@@ -215,26 +215,28 @@ function Table(props) {
         Data go away
         </button>
       </div>
-      <div className="collapse in" id="statistics-collapse">
-        <table className="table table-hover table-condensed">
-          <tbody>
-            <Row label="Sequence length" value={props.sequenceLength} />
-            {(!props.endDate && props.currentSpeed !== null) &&
+      <div className="container">
+        <div className="collapse in" id="statistics-collapse">
+          <table className="table table-hover table-condensed">
+            <tbody>
+              <Row label="Sequence length" value={props.sequenceLength} />
+              {(!props.endDate && props.currentSpeed !== null) &&
+                <TooltipRow
+                  label="Current speed"
+                  value={props.currentSpeed + " shuffles per second"}
+                  tooltip="The actual amount of iterations at the server right now. Note that the animation speed is only a fraction of this, probably something less than 60 frames per second."
+                  error={props.error}/>
+              }
+              <Row label="Total amount of shuffles" value={props.totalIterations} />
               <TooltipRow
-                label="Current speed"
-                value={props.currentSpeed + " shuffles per second"}
-                tooltip="The actual amount of iterations at the server right now. Note that the animation speed is only a fraction of this, probably something in the range of 30 to 60 frames per second. "
-                error={props.error}/>
-            }
-            <Row label="Total amount of shuffles" value={props.totalIterations} />
-            <TooltipRow
-                label="Sort probability"
-                value={sortProbability}
-                tooltip={"Assuming equal probability for generating any permutation. The probability would be same as tossing a coin " + probabilityAsCoinTosses + " times in a row and getting the same result on every toss."}/>
-            <Row label="Sorting started at" value={startDateString} />
-            <Row label="Sorting finished at " value={endDateString} />
-          </tbody>
-        </table>
+                  label="Sort probability"
+                  value={sortProbability}
+                  tooltip={"Same probability as tossing a fair coin " + probabilityAsCoinTosses + " times in a row and getting the same result every time."}/>
+              <Row label="Sorting started at" value={startDateString} />
+              <Row label="Sorting finished at " value={endDateString} />
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
