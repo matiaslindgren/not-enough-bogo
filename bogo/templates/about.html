@@ -1,1 +1,39 @@
-{% extends "generic_text.html" %}
+{% extends "layout.html" %}
+{% block body_content %}
+
+<div class="container text-container" id="body-container">
+
+  <div class="header-container">
+    <h1>Is this the most useless app in the universe?</h1>
+  </div>
+
+  <div class="paragraph-container">
+
+    <p>
+    Well it is certainly not the most useful one.
+    </p>
+
+    <p>
+    The randomized bogosort algorithm has an unbounded worst-case time complexity,
+    which means the amount of time required to sort a sequence is unknown.
+    It is not difficult to come up with examples which work essentially in the same way as the randomized bogosort algorithm.
+    Lets say you would like to play Chopin's Etude Op.25 No.9 but you have never practiced the piece.
+    Lets say there is only one sequence (ignoring dynamics and all the fancy artistic stuff) of notes which is considered the 'correct' way to play the piece.
+    Finding this sequence using a bogosort algorithm would work as follows:
+    <p>
+
+    <ol>
+      <li>Press random piano keys.</li>
+      <li>If the piece was not Chopin's Etude Op.25 No.9, go to 1.</li>
+    </ol>
+
+    <p>
+    This ridiculousness may rightly be dismissed as inefficiency but I find all kinds of dadaistic stupidity quite calming due to its non-belligerent and casual nature.
+    Moreover, the simple thought of optimizing a multi-pivot, in-place quicksort algorithm, while sobbingly tinkering with 9 different C++ pointers due to off-by-one errors makes me want to sell all of my electronic equipment and start a new life as a panda baby, just rolling around and gnawing on interesting objects.
+    Besides, <a href="{{ url_for('awesome') }}">this random shuffle</a> of 10 000 elements looks pretty damn awesome, don't you think?
+    </p>
+
+  </div>
+
+</div>
+{% endblock %}
