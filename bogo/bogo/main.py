@@ -134,7 +134,14 @@ def bogo_statistics(bogo_id):
 @flask_app.route("/bogo/active_state.json")
 def active_state():
     """ Return the smallest set of changing variables for the active bogo. """
-    return flask.jsonify(**get_cached_stats())
+    stats = get_cached_stats()
+    # Compress data
+    data = [
+        stats['activeId'],
+        stats['currentSpeed'],
+        stats['totalIterations']
+    ]
+    return flask.jsonify(data)
 
 
 ##############################

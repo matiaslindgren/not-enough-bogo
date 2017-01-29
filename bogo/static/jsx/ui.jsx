@@ -111,9 +111,16 @@ class BogoController extends React.Component {
     const activeStateUrl = this.props.backend.activeStateUrl;
     // Retrieve current state
     $.getJSON(activeStateUrl, data => {
+      const activeId = data[0];
+      const currentSpeed = data[1];
+      const totalIterations = data[2];
+
       // If the returned state id is different from this Bogo,
       // the sequence has been sorted in the backend.
-      if (data.activeId !== this.props.backend.bogoId) {
+      if (activeId === null) {
+        this.serverFailure();
+      }
+      else if (activeId !== this.props.backend.bogoId) {
         this.componentWillUnmount();
         // Retrieve full statistics for this Bogo and stop everything.
         $.getJSON(this.props.backend.bogoStatsUrl, fullData => {
@@ -128,14 +135,15 @@ class BogoController extends React.Component {
       else {
         // The sequence is still being sorted
         const newState = {
-          currentSpeed:    data.currentSpeed,
-          totalIterations: data.totalIterations,
+          currentSpeed:    currentSpeed,
+          totalIterations: totalIterations,
         }
 
-        if (data.currentSpeed === 0) {
+        if (currentSpeed === 0) {
           // The sequence is not yet sorted but the backend told the sorting speed is 0
           this.serverFailure();
-        } else if (this.state.error) {
+        }
+        else if (currentSpeed > 0 && this.state.error) {
           // The component is in an error state but the backend is working again
           Object.assign(
             newState,
