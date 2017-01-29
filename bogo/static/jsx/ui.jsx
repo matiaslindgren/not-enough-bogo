@@ -87,7 +87,7 @@ class BogoController extends React.Component {
   }
 
   serverFailure() {
-    this.setErrorState("Most unfortunate, it seems that unforeseen peculiarities are taking place at the sorting server... Please try again later");
+    this.setErrorState("Most unfortunate, it seems that unforeseen peculiarities are taking place at the sorting server... Please try again later.");
   }
 
   connectionError() {
@@ -167,7 +167,7 @@ class Bogo extends React.Component {
       <div className="container">
         {this.props.error &&
         <div id="bogo-title-container">
-          <h4>{this.props.stateName}</h4>
+          <p>{this.props.stateName}</p>
         </div>
         }
         <div className="container" id="sketch-container"></div>
@@ -264,7 +264,7 @@ function TooltipRow(props) {
         title={props.tooltip}>
       <td>{props.label}</td>
       {props.error ? (
-        <td style={{fontWeight:"bold"}}>{props.value}</td>
+        <td className="danger">{props.value}</td>
       ) : (
         <td>{props.value}</td>
       )}
