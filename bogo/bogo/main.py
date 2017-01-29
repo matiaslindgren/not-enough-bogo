@@ -165,31 +165,33 @@ def sequence_generator(start, stop):
 
 # TODO: rethink the duties of this function and bogo_main, who
 # should write the bogos and how to restart backups?
-def sort_until_done(sequence, from_backup=False):
+def sort_until_done(sequence, from_backup=False, init_total_iterations=0):
     """
     A stateful mess which shuffles the given sequence until it is sorted.
     If from_backup is given and True, this function will not create a new bogo into the database.
     If from_backup is False, a new bogo will be written into the database.
     Writes backups of the sorting state at BACKUP_INTERVAL iterations.
     """
+    total_iterations = init_total_iterations
+    backup_interval = config.BACKUP_INTERVAL
+    iter_speed_resolution = config.ITER_SPEED_RESOLUTION
+
     if from_backup:
         bogo = get_newest_bogo()
         if not bogo or not bogo['id']:
             raise RuntimeError("Attempted to restart from backup but get_newest_bogo returned {}.".format(tuple(bogo)))
+
         this_bogo_id = bogo['id']
         celery_logger.info('Sorting a backup, fetched the id {} from the database.'.format(this_bogo_id))
     else:
         this_bogo_id = create_new_bogo(sequence)
         celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
-        backup_sorting_state(sequence, bogo_random)
 
-    backup_interval = config.BACKUP_INTERVAL
-    iter_speed_resolution = config.ITER_SPEED_RESOLUTION
+        backup_sorting_state(sequence, bogo_random, total_iterations)
 
     celery_logger.info('Begin bogosorting with:\nsequence: {}\nbogo id: {}\nbackup interval: {}\niter speed resolution: {}.'.format(sequence, this_bogo_id, backup_interval, iter_speed_resolution))
 
     iteration = 0
-    total_iterations = 0
     cycle_total_time = 0.0
 
     while not is_sorted(sequence):
@@ -197,14 +199,12 @@ def sort_until_done(sequence, from_backup=False):
         bogo_random.shuffle(sequence)
         if iteration >= backup_interval:
             celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
-            backup_sorting_state(sequence, bogo_random)
+            backup_sorting_state(sequence, bogo_random, total_iterations)
             iteration = 0
         iteration += 1
         total_iterations += 1
         cycle_total_time += time.perf_counter() - begin_time
         if iteration % iter_speed_resolution == 0:
-            # This should be checked outside the task in a black box manner.
-            # Though, then it requires an additional thread
             update_iteration_speed(iter_speed_resolution/cycle_total_time)
             update_total_iterations(total_iterations)
             cycle_total_time = 0.0
