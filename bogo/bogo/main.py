@@ -22,21 +22,29 @@ bogo_random.seed(config.RANDOM_SEED)
 ##############################
 
 def update_iteration_speed(iter_per_second):
-    return redis_app.set("iter_speed", iter_per_second)
+    return (redis_app.set("iter_speed", iter_per_second) and
+            redis_app.expire("iter_speed", 3))
 
 def update_total_iterations(total_iterations):
     return redis_app.set("total_iterations", total_iterations)
 
+def get_cached_iteration_speed():
+    speed = redis_app.get("iter_speed")
+    return math.floor(float(speed)) if speed is not None else 0
+
+def get_cached_iteration_count():
+    total_iterations = redis_app.get("total_iterations")
+    return int(total_iterations) if total_iterations is not None else 0
+
 def get_active_bogo_id():
     return redis_app.get("active_bogo_id")
 
-def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
+def overwrite_bogo_cache(bogo_id, sequence_length):
     """ Clear redis cache and insert new values.  """
     redis_app.flushall()
     return (
         redis_app.set("active_bogo_id", bogo_id) and
         redis_app.set("sequence_length", sequence_length) and
-        redis_app.set("start_date", start_date) and
         update_iteration_speed(0) and
         update_total_iterations(0)
     )
@@ -44,8 +52,8 @@ def overwrite_bogo_cache(bogo_id, sequence_length, start_date):
 def get_cached_stats():
     """ Retrieve current sorting state from the redis cache.  """
     return {
-        "currentSpeed":     ast.literal_eval(redis_app.get("iter_speed")),
-        "totalIterations":  ast.literal_eval(redis_app.get("total_iterations")),
+        "currentSpeed":     get_cached_iteration_speed(),
+        "totalIterations":  get_cached_iteration_count(),
         "activeId":         get_active_bogo_id(),
     }
 
@@ -301,7 +309,7 @@ def create_new_bogo(sequence):
     )
     cursor = execute_and_commit(query, data)
     bogo_id = cursor.lastrowid
-    if not overwrite_bogo_cache(bogo_id, *data):
+    if not overwrite_bogo_cache(bogo_id, data[0]):
         raise RuntimeError("Failed to write redis cache for bogo {}".format(bogo_id))
     return bogo_id
 
