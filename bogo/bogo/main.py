@@ -183,6 +183,7 @@ def sort_until_done(sequence, from_backup=False, init_total_iterations=0):
 
         this_bogo_id = bogo['id']
         celery_logger.info('Sorting a backup, fetched the id {} from the database.'.format(this_bogo_id))
+        overwrite_bogo_cache(this_bogo_id, len(sequence))
     else:
         this_bogo_id = create_new_bogo(sequence)
         celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
