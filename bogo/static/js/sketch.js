@@ -8,21 +8,35 @@ const SKETCH_CONFIG = {
 class AnimationWrapper {
   constructor(settings) {
     this.containerId = settings.containerId;
-    this.columns =     settings.columns;
-    this.shufflin =    settings.shufflin;
+    this.columns     = settings.columns;
+    this.sorted      = settings.sorted;
 
-    this.spacing =     SKETCH_CONFIG.spacing;
-    this.yPadding =    SKETCH_CONFIG.yPadding;
+    this.shufflin    = !this.sorted;
 
-    this.sequence = _.range(1, this.columns+1);
+    this.spacing     = SKETCH_CONFIG.spacing;
+    this.yPadding    = SKETCH_CONFIG.yPadding;
+
+    this.sequence    = _.range(1, this.columns+1);
   }
 
+  // Switches to alter the state of the returned p5 instance
+
+  /** Stop shuffling columns but don't stop looping. */
   stopShuffling() {
-    // pull carpet from under the sketch instance returned by p5sketch
     this.shufflin = false;
   }
 
-  // Capture the state of this sketch and 'render' it as an p5 instance.
+  /** Resume shuffling. */
+  startShuffling() {
+    this.shufflin = true;
+  }
+
+  /** Clear canvas, sort columns and stop looping. */
+  setSorted() {
+    this.sorted = true;
+  }
+
+  /** Return a p5 instance with access to the state of AnimationWrapper. */
   p5sketch() {
     const sketch = this;
 
