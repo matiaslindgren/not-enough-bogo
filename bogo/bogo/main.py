@@ -222,7 +222,7 @@ def sort_until_done(sequence, from_backup=False, init_total_iterations=0):
 
 
 @celery_app.task(ignore_result=True)
-def bogo_main():
+def bogo_main(max_cycles=None):
     """
     Main sorting function responsible of sorting every defined sequence from
     list(range(1, 11)) up to list(range(1, config.SEQUENCE_MAX_LENGTH)).
@@ -238,21 +238,28 @@ def bogo_main():
     if previous_state:
         previous_seq = ast.literal_eval(previous_state['sequence'])
         celery_logger.info("Previous backup found, seq of len {}".format(len(previous_seq)))
+
         next_seq_len = min(max_length, len(previous_seq) + 1)
+
         previous_random = ast.literal_eval(previous_state['random_state'])
         bogo_random.setstate(previous_random)
 
+        backup_iterations = previous_state['total_iterations']
+
         celery_logger.info("Resuming sorting with backup: {}".format(previous_seq))
-        sort_until_done(previous_seq, from_backup=True)
+        sort_until_done(previous_seq, from_backup=True, init_total_iterations=backup_iterations)
         celery_logger.info("Backup sequence sorted: {}".format(previous_seq))
     else:
         celery_logger.info("No backups found, starting a new bogo cycle.")
         next_seq_len = min_length
 
-    for seq in sequence_generator(next_seq_len, max_length):
-        celery_logger.info("Call sort_until_done with: {}".format(seq))
+    for cycle, seq in enumerate(map(list, sequence_generator(next_seq_len, max_length))):
+        if max_cycles is not None and cycle > max_cycles:
+            celery_logger.info("Reached max cycle {}, bogo_main returning".format(cycle))
+            break
+        celery_logger.info("Cycle {}, call sort_until_done with: {}".format(cycle, seq))
         sort_until_done(seq)
-        celery_logger.info("sort_until_done returned, parameter is now {}".format(seq))
+        celery_logger.info("Cycle {}, sort_until_done returned, parameter is now {}".format(cycle, seq))
 
 
 ##############################
