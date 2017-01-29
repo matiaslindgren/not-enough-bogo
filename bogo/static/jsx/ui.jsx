@@ -307,7 +307,7 @@ function uiMain() {
   // Get backend json api url for statistics
   const backendData = JSON.parse($("#bogo-data-api").html());
   const bogoStatsUrl = backendData.bogoStatsUrl;
-  const sketchContainerId = "#sketch-container";
+  const sketchContainerId = "sketch-container";
 
   // Get initial state from backend and render ReactDOM when data arrives
   $.getJSON(bogoStatsUrl, state => {
