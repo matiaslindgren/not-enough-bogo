@@ -28,7 +28,7 @@ function coinsFromProbability(p) {
  */
 class BogoController extends React.Component {
   /**
-   * Create Bogo with state variables set to "Loading...".
+   * Create Bogo
    * @param {Object} props
    * @param {Object} props.initState - Initial state as returned by the backend.
    * etc etc TODO
@@ -39,8 +39,7 @@ class BogoController extends React.Component {
     const isSorted = props.endDate && props.endDate.length > 0;
 
     this.state = {
-      stateName:       (isSorted) ? "Sorted" : this.generateActiveName(),
-      stateNameDots:   "",
+      currentSpeed:    null,
       previousUrl:     props.backend.previous,
       nextUrl:         props.backend.next
     }
@@ -48,7 +47,7 @@ class BogoController extends React.Component {
     const animationSettings = {
       containerId: props.sketchContainerId,
       columns:     props.sequenceLength,
-      shufflin:    !isSorted
+      sorted:      isSorted
     }
 
     this.animationWrapper = new AnimationWrapper(animationSettings);
@@ -57,36 +56,11 @@ class BogoController extends React.Component {
     this.refreshState();
   }
 
-  /** Return a random string prefixed with 'Bogosorting '. The random string may or may not be funny.  */
-  generateActiveName() {
-    const states = [
-      "with great enthusiasm",
-      "vigorously",
-      "with seemingly unlimited passion",
-      "rather impetuously",
-      "in an unreasoned manner",
-      "like a furious Jerboa",
-      "with passion",
-      "ironically fast",
-      "while occasionally sipping cheap red wine",
-      "furiously, angrily even",
-      "with white shores and green fields in mind",
-      "and thinking of tomorrow",
-      "platonically, whatever that means in this context",
-      "with utmost haste",
-      "whilst questioning the meaning of all this",
-      "with a tad of melancholy"
-    ];
-    return "Bogosorting " + states[Math.floor(Math.random()*states.length)];
-  }
-
   componentDidMount() {
-    if (this.state.stateName !== "Sorted") {
-      this.timerID = setInterval(
-        _ => this.refreshState(),
-        this.props.backend.maxPollingInterval
-      );
-    }
+    this.timerID = setInterval(
+      _ => this.refreshState(),
+      this.props.backend.maxPollingInterval
+    );
 
     // Start animation
     let p5app = new p5(this.animationWrapper.p5sketch());
@@ -122,22 +96,17 @@ class BogoController extends React.Component {
         // Retrieve full statistics for this Bogo and stop everything.
         $.getJSON(this.props.backend.bogoStatsUrl, fullData => {
           this.setState({
-            stateName:       "Sorted",
-            stateNameDots:   "",
             endDate:         fullData.data.endDate,
             totalIterations: fullData.data.totalIterations,
-            currentSpeed:    "-",
             previousUrl:     fullData.links.previous,
             nextUrl:         fullData.links.next
           });
         });
       }
       else {
-        // The sequence is still being sorted, update speed and dots in title
-        const currentSuffix = this.state.stateNameDots;
-        this.setState({
+        // The sequence is still being sorted
+        const newState = {
           currentSpeed:    data.currentSpeed,
-          stateNameDots:   currentSuffix.length < 4 ? currentSuffix + "." : " ",
           totalIterations: data.totalIterations,
         });
       }
@@ -148,7 +117,6 @@ class BogoController extends React.Component {
   render() {
     return (
       <Bogo stateName=      {this.state.stateName}
-            stateNameSuffix={this.state.stateNameDots}
             startDate=      {this.props.startDate}
             endDate=        {this.state.endDate}
             sequenceLength= {this.props.sequenceLength}
@@ -167,7 +135,7 @@ class Bogo extends React.Component {
     return (
       <div className="container">
         <div id="bogo-title-container">
-          <h4>{this.props.stateName}<span>{this.props.stateNameSuffix}</span></h4>
+          <h4>{this.props.stateName}</h4>
         </div>
         <div className="container" id="sketch-container"></div>
         <Table startDate=       {this.props.startDate}
@@ -198,7 +166,8 @@ class Bogo extends React.Component {
 function Table(props) {
   const startDateString = (props.startDate) ? new Date(props.startDate).toString() : "";
   const endDateString = (props.endDate) ? new Date(props.endDate).toString() : "";
-
+  const sortProbability = SORT_PROBABILITY[props.sequenceLength];
+  const probabilityAsCoinTosses = coinsFromProbability(sortProbability);
   return (
     <div>
       <div className="container" id="collapse-toggle-container">
@@ -225,8 +194,8 @@ function Table(props) {
             <Row label="Total amount of shuffles" value={props.totalIterations} />
             <TooltipRow
                 label="Sort probability"
-                value={SORT_PROBABILITY[props.sequenceLength]}
-                tooltip="Assuming equal probability for generating any permutation"/>
+                value={sortProbability}
+                tooltip={"Assuming equal probability for generating any permutation. The probability would be same as tossing a coin " + probabilityAsCoinTosses + " times in a row and getting the same result on every toss."}/>
             <Row label="Sorting started at" value={startDateString} />
             <Row label="Sorting finished at " value={endDateString} />
           </tbody>
