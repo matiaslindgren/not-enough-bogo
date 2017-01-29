@@ -60,61 +60,45 @@ body {
   font-family: serif;
 }
 
-#body-container img {
-  margin-bottom: 20px;
+.container {
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
 }
-
-.pager li>a,
-.pager li>span {
-  padding: 1px 5px;
-  font-size: 12px;
-  line-height: 1.5;
-  border-radius: 3px;
-}
-
-.text-container {
-  max-width: 60%;
-}
-
-#sketch-container {
-  height: 400px;
-  margin-bottom: 20px;
-}
-
-.text-container {
-  margin-left: 20%;
-  margin-top: 130px;
-}
-
-/* .text-container * { */
-/*   max-width: 800px; */
-/* } */
 
 .header-container {
   margin-bottom: 30px;
 }
 
-.paragraph-container {
+#dummy-sort-container,
+#sketch-container {
+  min-height: 400px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+#body-container.text-container {
+  max-width: 420px;
   text-align: justify;
 }
 
+/* TODO: fix the navbar centering hack */
+/* ul.nav > li { */
+/*   text-align: center; */
+/*   width: 20%; */
+/* } */
 
-body a {
-  color: #484848;
-  text-decoration: none;
-  font-weight: bold;
+/* nav > .container { */
+/*   padding-left: 0; */
+/* } */
+
+.navbar .navbar-nav {
+  display: inline-block;
+  float: none;
 }
-
-body a:focus,
-body a:hover {
-  color: #0a0a0a;
-  text-decoration: underline;
-}
-
 
 #collapse-toggle-container,
 #bogo-title-container {
-  text-align: center;
   margin-bottom: 10px;
 }
 
@@ -131,6 +115,38 @@ body a:hover {
 
 #collapse-toggle:focus {
   outline-width: 0px;
+}
+
+tbody > tr > td {
+  width: 50%;
+}
+
+tbody > tr > td:first-child {
+  text-align: right;
+}
+
+tbody > tr > td:last-child {
+  text-align: left;
+}
+
+body a {
+  color: #484848;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+body a:focus,
+body a:hover {
+  color: #0a0a0a;
+  text-decoration: underline;
+}
+
+.pager li > a,
+.pager li > span {
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
 }
 
 /* ==========================================================================
