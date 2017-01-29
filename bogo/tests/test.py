@@ -372,6 +372,7 @@ class Test(unittest.TestCase):
 
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
     @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
     def test_bogo_main_initializes_from_config(self):
@@ -392,6 +393,7 @@ class Test(unittest.TestCase):
         )
 
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
     @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
     def test_bogo_main_starts_from_new_sequence_if_no_backups_exist(self):
