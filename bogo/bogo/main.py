@@ -146,21 +146,21 @@ def is_sorted(xs):
 
 def sequence_generator(start, stop):
     """
-    Infinite iterator yielding following lists:
-        [start, start-1, ..., 1]
-        [start+1, start, start-1, ..., 1]
-        [start+2, start+1, start, start-1, ..., 1]
+    Infinite iterator yielding following tuples:
+        (start, start-1, ..., 1)
+        (start+1, start, start-1, ..., 1)
+        (start+2, start+1, start, start-1, ..., 1)
          .
          .
          .
-        [stop, stop-1, ..., start+1, start, start-1, ..., 1]
-        [start, start-1, ..., 1]
-        [start+1, start, start-1, ..., 1]
+        (stop, stop-1, ..., start+1, start, start-1, ..., 1)
+        (start, start-1, ..., 1)
+        (start+1, start, start-1, ..., 1)
          .
          .
          .
     """
-    return itertools.cycle(list(reversed(range(1, n))) for n in range(start+1, stop+1))
+    return itertools.cycle(tuple(reversed(range(1, n))) for n in range(start+1, stop+2))
 
 
 # TODO: rethink the duties of this function and bogo_main, who
