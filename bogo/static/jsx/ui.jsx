@@ -52,6 +52,10 @@ class BogoController extends React.Component {
 
     this.animationWrapper = new AnimationWrapper(animationSettings);
 
+    this.setErrorState      = this.setErrorState.bind(this);
+    this.connectionError    = this.connectionError.bind(this);
+    this.serverFailure      = this.serverFailure.bind(this);
+
     // Trigger a GET request for full state update
     this.refreshState();
   }
@@ -82,7 +86,25 @@ class BogoController extends React.Component {
   /** The sequence is sorted, stop refresh timer. */
   componentWillUnmount() {
     clearInterval(this.timerID);
+    this.animationWrapper.setSorted();
     this.animationWrapper.stopShuffling();
+  }
+
+  setErrorState(message) {
+    this.setState({
+      stateName: message,
+      currentSpeed: 0,
+      error: true
+    });
+    this.animationWrapper.stopShuffling();
+  }
+
+  serverFailure() {
+    this.setErrorState("Most unfortunate, it seems that unforeseen peculiarities are taking place at the sorting server... Please try again later");
+  }
+
+  connectionError() {
+    this.setErrorState("Oh my, looks like we can't connect to the sorting service right now...");
   }
 
   refreshState() {
@@ -101,16 +123,29 @@ class BogoController extends React.Component {
             previousUrl:     fullData.links.previous,
             nextUrl:         fullData.links.next
           });
-        });
+        }).fail(this.connectionError);
       }
       else {
         // The sequence is still being sorted
         const newState = {
           currentSpeed:    data.currentSpeed,
           totalIterations: data.totalIterations,
-        });
+        }
+
+        if (data.currentSpeed === 0) {
+          // The sequence is not yet sorted but the backend told the sorting speed is 0
+          this.serverFailure();
+        } else if (this.state.error) {
+          // The component is in an error state but the backend is working again
+          Object.assign(
+            newState,
+            { error: false }
+          );
+          this.animationWrapper.startShuffling();
+        }
+        this.setState(newState);
       }
-    });
+    }).fail(this.connectionError);
   }
 
   /** Render the whole mess. */
@@ -124,6 +159,7 @@ class BogoController extends React.Component {
             totalIterations={this.state.totalIterations}
             previousUrl=    {this.state.previousUrl}
             nextUrl=        {this.state.nextUrl}
+            error=          {this.state.error === true}
       />
     );
   }
@@ -134,14 +170,17 @@ class Bogo extends React.Component {
   render() {
     return (
       <div className="container">
+        {this.props.error &&
         <div id="bogo-title-container">
           <h4>{this.props.stateName}</h4>
         </div>
+        }
         <div className="container" id="sketch-container"></div>
         <Table startDate=       {this.props.startDate}
                endDate=         {this.props.endDate}
                sequenceLength=  {this.props.sequenceLength}
                currentSpeed=    {this.props.currentSpeed}
+               error=           {this.props.error}
                totalIterations= {this.props.totalIterations}
         />
         <Pager previousUrl=    {this.props.previousUrl}
@@ -185,11 +224,12 @@ function Table(props) {
         <table className="table table-hover table-condensed">
           <tbody>
             <Row label="Sequence length" value={props.sequenceLength} />
-            {(!props.endDate && props.currentSpeed) &&
+            {(!props.endDate && props.currentSpeed !== null) &&
               <TooltipRow
                 label="Current speed"
-                value={Math.round(props.currentSpeed) + " shuffles per second"}
-                tooltip="The actual amount of iterations at the server right now"/>
+                value={props.currentSpeed + " shuffles per second"}
+                tooltip="The actual amount of iterations at the server right now. Note that the animation speed is only a fraction of this, probably something in the range of 30 to 60 frames per second. "
+                error={props.error}/>
             }
             <Row label="Total amount of shuffles" value={props.totalIterations} />
             <TooltipRow
@@ -228,7 +268,11 @@ function TooltipRow(props) {
         data-placement="bottom"
         title={props.tooltip}>
       <td>{props.label}</td>
-      <td>{props.value}</td>
+      {props.error ? (
+        <td style={{fontWeight:"bold"}}>{props.value}</td>
+      ) : (
+        <td>{props.value}</td>
+      )}
     </tr>
   );
 }
