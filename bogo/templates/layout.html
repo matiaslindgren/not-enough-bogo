@@ -25,14 +25,12 @@
       <![endif]-->
 
       <nav class="navbar navbar-default">
-        <div class="container-fluid">
-          <div class="navbar-header">
-            <a class="navbar-brand active" href="/">
-              <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
-            </a>
-          </div>
+        <div class="container">
          <ul class="nav navbar-nav">
            <li><a href="{{ url_for('about') }}">WTF?</a></li>
+           <li><a href="{{ url_for('eternal_sort') }}">Bogosort?</a></li>
+           <li><a href="{{ url_for('index') }}">
+              <span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
            <li><a href="{{ url_for('statistics') }}">Statistics</a></li>
            <li><a href="{{ url_for('source') }}">Source</a></li>
           </ul>

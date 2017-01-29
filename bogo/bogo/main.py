@@ -90,9 +90,10 @@ def statistics():
 def source():
     return flask.render_template('source.html')
 
-@flask_app.route("/awesome")
-def awesome():
-    return flask.render_template('awesome.html')
+@flask_app.route("/eternal")
+def eternal_sort():
+    render_context = { "column_count": config.DUMMY_SORT_COLUMN_COUNT }
+    return flask.render_template('eternal_sort.html', **render_context)
 
 
 @flask_app.route("/bogo/<int:bogo_id>")
