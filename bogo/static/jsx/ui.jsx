@@ -1,13 +1,26 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-// TODO this is still a mess, state should be lifted
+// TODO what a fucking mess
+// TODO update documentation
 
 
 function factorial(x) {
   return (x === 0) ? 1 : x*factorial(x-1);
 }
 const SORT_PROBABILITY = _.object(_.map(_.range(1, 30), x => [x, 1.0/factorial(x)]));
+/**
+ * p(n) = p, where p is the probability of getting n successive heads (or tails) on n throws:
+ * p = (1/2)^n
+ * log(p) = n*log(1/2)
+ * log(p) = -n*log(2)
+ * n = -log(p)/log(2)
+ * n = -log2(p)
+ */
+function coinsFromProbability(p) {
+  return -Math.log2(p).toFixed(1);
+}
+
 
 /**
  * React component. The top-level component containing all elements on the page with non-static state.
