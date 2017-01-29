@@ -16,7 +16,8 @@ def make_flask(name):
     flask_app.config.update(
         DATABASE=os.path.join(flask_app.root_path, config.DATABASE_NAME),
         CELERY_BROKER_URL=config.BROKER_URL,
-        DATABASE_SCHEMA=os.path.join(flask_app.root_path, config.SCHEMA_NAME)
+        DATABASE_SCHEMA=os.path.join(flask_app.root_path, config.SCHEMA_NAME),
+        TEMPLATES_AUTO_RELOAD=config.TEMPLATES_AUTO_RELOAD
     )
     return flask_app
 
