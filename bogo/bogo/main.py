@@ -342,16 +342,17 @@ def close_bogo(bogo_id, total_iterations):
     execute_and_commit(query, data)
 
 
-def backup_sorting_state(sequence, random_instance):
+def backup_sorting_state(sequence, random_instance, total_iterations):
     """
-    Write sequence, the state of the random module and the date into the database.
+    Write backup of the current sorting state.
     Returns the id of the inserted backup row.
     """
-    query = "insert into backups (sequence, random_state, saved) values (?, ?, ?)"
+    query = "insert into backups (sequence, random_state, saved, total_iterations) values (?, ?, ?, ?)"
     backup_data = (
         repr(sequence),
         repr(random_instance.getstate()),
-        datetime.datetime.utcnow().isoformat()
+        datetime.datetime.utcnow().isoformat(),
+        total_iterations
     )
     cursor = execute_and_commit(query, backup_data)
     return cursor.lastrowid

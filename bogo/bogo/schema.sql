@@ -9,9 +9,10 @@ create table bogos (
 
 drop table if exists backups;
 create table backups (
-  id            integer primary key autoincrement,
-  sequence      text    not null,
-  random_state  text    not null,
-  saved         date    not null
+  id               integer primary key autoincrement,
+  sequence         text    not null,
+  random_state     text    not null,
+  saved            date    not null,
+  total_iterations integer not null
 );
 
