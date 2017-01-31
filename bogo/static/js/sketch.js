@@ -54,7 +54,7 @@ class AnimationWrapper {
 
         sketchWidth      = container.width();
         sketchHeight     = container.height();
-        columnWidth      = (wrapper.spacing/wrapper.columns) + sketchWidth/wrapper.columns/wrapper.spacing;
+        columnWidth      = (wrapper.spacing/(wrapper.columns + 1)) + sketchWidth/wrapper.columns/wrapper.spacing;
         columnHeightStep = (sketchHeight - wrapper.yPadding)/wrapper.columns;
       }
 
