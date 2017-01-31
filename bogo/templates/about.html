@@ -57,12 +57,20 @@
     $${40\choose{7}} = 18643560.$$
     So the probability of choosing exactly the same 7 numbers as you have chosen is approximately:
     $$\frac{1}{40\choose{7}} = 5.4\cdot10^{-8} \approx 0.00000005.$$
-    Wrapping up, the probability of a randomized bogosort algorithm sorting a sequence of 100 unique integers to find the permutation of all integers in ascending order is the same as winning the jackpot using the same set of 7 numbers
-    $$\frac{\frac{1}{40\choose{7}}}{\frac{1}{100!}} = \frac{5.4\cdot10^{-8}}{9.33\cdot10^{-157}} = 5005815168559231658018125952104494304939067958887896628724695357864980205703107710017037038288075874165368680703534676099369688930394944229128634630144$$
-    times.</p>
+    If we call the probability of winning at the lottery \(p_l\), then winning the lottery \(n\) times in a row is \(p_l^n\).
+    If we call the probability of the bogosort algorithm finding a sorted permutation from a sequence of 100 unique integers \(p_b\), then we want to find how large \(n\) must be in order for the probabilities to be equal:
+    $$\begin{align}
+      p_l^n &= p_b \\[3px]
+      n\cdot\log{p_l} &= \log{p_b} \\[3px]
+      n &= \frac{\log{p_b}}{\log{p_l}} \\[3px]
+      n &= \frac{\log{9.33\cdot10^{-157}}}{\log{5.4\cdot10^{-8}}} \\[3px]
+      n &= \frac{\log{9.33} - 157}{\log{5.4} -8} \\[3px]
+      n &\approx 24.7
+      \end{align}$$
+    </p>
 
     <p>
-    If these numbers do not convince you of the absurdity of this web page, try watching an <a href="{{ url_for('eternal_sort') }}">animation</a> of a bogosort of 10 000 elements. It is rather calming, in fact. Almost like listening to the rain.
+    If you have already some lottery 24 times in a row and feel that this is nothing, then try watching (not for slow computers or mobile devices!) an <a href="{{ url_for('eternal_sort') }}">animation</a> of a bogosort of 10 000 elements. It is rather calming, in fact. Almost like listening to the rain.
     </p>
 
   </div>
