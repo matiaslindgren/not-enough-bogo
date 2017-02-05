@@ -75,14 +75,10 @@ class Test(unittest.TestCase):
     def _insert_bogo(self, xs):
         with main.flask_app.app_context():
             db = main.get_db()
-            insert_query = "insert into bogos (sequence_length, started) values (?, ?)"
-            db.execute(insert_query, (len(xs), datetime.datetime.utcnow().isoformat()))
+            insert_query = "insert into bogos (sequence_length, started, random_state) values (?, ?, ?)"
+            data = (len(xs), datetime.datetime.utcnow().isoformat(), repr(self.random.getstate()))
+            db.execute(insert_query, data)
             db.commit()
-
-    def _backup_and_retrieve(self, xs):
-        with main.flask_app.app_context():
-            main.backup_sorting_state(xs, self.random, 0)
-            return main.get_previous_state_all()
 
     def _get_stringio_logger(self):
         logger = logging.getLogger()
@@ -108,16 +104,8 @@ class Test(unittest.TestCase):
             fetch_query = "select * from bogos order by started desc"
             return db.execute(fetch_query).fetchone()
 
-    def _get_newest_backup(self):
-        with main.flask_app.app_context():
-            db = main.get_db()
-            fetch_query = "select * from backups order by saved desc"
-            return db.execute(fetch_query).fetchone()
-
-
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_create_new_bogo(self, xs):
+    def test_create_new_bogo_database_has_correct_values(self, xs):
         before_insert = datetime.datetime.utcnow()
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
@@ -143,6 +131,12 @@ class Test(unittest.TestCase):
             "Timedelta between the time at saving a new bogo and the time stored in the database was greater than 5 seconds."
         )
 
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
+    def test_create_new_bogo_redis_cache_has_correct_values(self, xs):
+        with main.flask_app.app_context():
+            bogo_id = main.create_new_bogo(xs)
+
         redis_key_not_set_msg = "create_new_bogo did not update the redis cache."
         with main.flask_app.app_context():
             self.assertEqual(
@@ -162,12 +156,11 @@ class Test(unittest.TestCase):
             )
 
 
-
     @given(bogo_id=DATABASE_ID_INTEGERS)
     def test_close_non_existing_bogo(self, bogo_id):
         with main.flask_app.app_context():
             with self.assertRaises(RuntimeError, msg="Closing a bogo with a non-existing id should raise a RuntimeError."):
-                main.close_bogo(bogo_id, 0)
+                main.close_bogo(bogo_id, self.random, 0)
 
 
     @mock.patch('bogo.main.redis_app', mock_redis_app)
@@ -175,18 +168,19 @@ class Test(unittest.TestCase):
     def test_close_already_closed_bogo(self, xs):
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
-            main.close_bogo(bogo_id, 0)
+            main.close_bogo(bogo_id, self.random, 0)
             with self.assertRaises(RuntimeError, msg="Closing a bogo which has a finished date should raise a RuntimeError."):
-                main.close_bogo(bogo_id, 0)
+                main.close_bogo(bogo_id, self.random, 0)
 
 
     @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_close_open_bogo(self, xs):
-        before_insert = datetime.datetime.utcnow()
+        before_insert_time = datetime.datetime.utcnow()
+        before_insert_random = self.random.getstate()
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
-            main.close_bogo(bogo_id, 0)
+            main.close_bogo(bogo_id, self.random, 0)
             db = main.get_db()
             fetch_query = "select * from bogos where id=?"
             bogo = db.execute(fetch_query, (bogo_id, )).fetchone()
@@ -200,61 +194,59 @@ class Test(unittest.TestCase):
         db_started = date_parser.parse(bogo['started'])
         db_finished = date_parser.parse(bogo['finished'])
 
-        total_delta = after_close - before_insert
+        total_delta = after_close - before_insert_time
         db_delta = db_finished - db_started
 
         self.assertLess(
             db_delta,
             total_delta,
             "After closing an inserted bogo, the timedelta between the start time {} and the finished time {} was greater than the timedelta before calling insert {} and the time after calling close {}."
-            .format(bogo['started'], bogo['finished'], before_insert.isoformat(), after_close.isoformat())
+            .format(bogo['started'], bogo['finished'], before_insert_time.isoformat(), after_close.isoformat())
         )
 
-
-    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_backup_sorting_state_sequence_is_intact(self, xs):
-        backup = self._backup_and_retrieve(xs)
-        self.assertListEqual(
-            ast.literal_eval(backup['sequence']),
-            xs,
-            "The sequence stored as a backup was different when returned from the database."
-        )
-
-
-    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_backup_sorting_state_date_is_sane(self, xs):
-        before_insert = datetime.datetime.utcnow()
-        backup = self._backup_and_retrieve(xs)
-        time_delta = date_parser.parse(backup['saved']) - before_insert
-        self.assertLess(
-            time_delta,
-            datetime.timedelta(seconds=5),
-            "Timedelta between the time at saving a backup and the time stored in the database was greater than 5 seconds."
-        )
-
-
-    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
-    def test_backup_sorting_state_when_random_not_altered(self, xs):
-        self.random.seed(config.RANDOM_SEED)
-        random_state_before = self.random.getstate()
-        backup = self._backup_and_retrieve(xs)
-        random_state_db = ast.literal_eval(backup['random_state'])
-        self.assertEqual(
-            random_state_before,
-            random_state_db,
-            "The random state returned by the database has is different even though the state of the random module was not changed."
+        self.assertTupleEqual(
+            ast.literal_eval(bogo['random_state']),
+            before_insert_random,
+            "Closing a bogo should save the random state."
         )
 
 
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED,
            state_change_count=strategies.integers(min_value=0, max_value=10000))
-    def test_backup_random_state_preserves_the_pseudorandom_sequence(self, xs, state_change_count):
+    def test_create_new_bogo_random_state_preserves_the_pseudorandom_sequence(self, xs, state_change_count):
         self.random.seed(config.RANDOM_SEED)
         for _ in range(state_change_count):
             self.random.random()
 
-        backup = self._backup_and_retrieve(xs)
-        random_state_db = ast.literal_eval(backup['random_state'])
+        self._insert_bogo(xs)
+        random_state_db = ast.literal_eval(self._get_newest_bogo()['random_state'])
+
+        expected_random_sequence = [self.random.random() for _ in range(state_change_count)]
+        self.random.setstate(random_state_db)
+        from_db_random_sequence = (self.random.random() for _ in range(state_change_count))
+
+        for expected, from_db in zip(expected_random_sequence, from_db_random_sequence):
+            self.assertAlmostEqual(
+                from_db,
+                expected,
+                7,
+                "The sequence of pseudorandom floats was different when the state was reloaded from the db."
+            )
+
+    @given(xs=LIST_RANGE_INTEGERS_SHUFFLED,
+           state_change_count=strategies.integers(min_value=0, max_value=10000))
+    def test_close_bogo_random_state_preserves_the_pseudorandom_sequence(self, xs, state_change_count):
+        self.random.seed(config.RANDOM_SEED)
+        for _ in range(state_change_count):
+            self.random.random()
+
+        self._insert_bogo(xs)
+        bogo = self._get_newest_bogo()
+        with main.flask_app.app_context():
+            main.close_bogo(bogo['id'], self.random, 0)
+
+        bogo = self._get_newest_bogo()
+        random_state_db = ast.literal_eval(bogo['random_state'])
 
         expected_random_sequence = [self.random.random() for _ in range(state_change_count)]
         self.random.setstate(random_state_db)
@@ -269,171 +261,174 @@ class Test(unittest.TestCase):
             )
 
 
+
     @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_sort_until_done_sorts_unsorted_sequence(self, xs):
+    def test_bogosort_until_done_sorts_unsorted_sequence(self, xs):
         with main.flask_app.app_context():
-            main.sort_until_done(xs)
+            main.bogosort_until_done(xs, 0.0)
         self.assertTrue(main.is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_sort_until_done_logs_correctly(self, xs):
-        expected_patterns = (
-            r"^Writing backup for bogo \d+",
-            "^Begin bogosorting with:",
-            re.escape("sequence: {}".format(str(xs))),
-            r"^bogo id: \d+",
-            "^backup interval: {}".format(config.BACKUP_INTERVAL),
-            "^iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
-            r"^Done sorting bogo \d+ in \d+ iterations.",
-            r"^Bogo \d+ closed.",
-            "^Flush.*redis"
-        )
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    # def test_bogosort_until_done_logs_correctly(self, xs):
+    #     expected_patterns = (
+    #         r"^Writing backup for bogo \d+",
+    #         "^Begin bogosorting with:",
+    #         re.escape("sequence: {}".format(str(xs))),
+    #         r"^bogo id: \d+",
+    #         "^backup interval: {}".format(config.BACKUP_INTERVAL),
+    #         "^iter speed resolution: {}".format(config.ITER_SPEED_RESOLUTION),
+    #         r"^Done sorting bogo \d+ in \d+ iterations.",
+    #         r"^Bogo \d+ closed.",
+    #         "^Flush.*redis"
+    #     )
 
-        self._assertFunctionLogs(
-            main.sort_until_done,
-            (xs, ),
-            logger_name="bogo.main.celery_logger",
-            patterns=expected_patterns
-        )
-
-
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_sort_until_done_creates_a_new_bogo(self, xs):
-        newest_before = self._get_newest_bogo()
-
-        with main.flask_app.app_context():
-            main.sort_until_done(xs)
-
-        newest_after = self._get_newest_bogo()
-
-        self.assertIsNotNone(
-            newest_after,
-            "sort_until_done did not insert a new bogo."
-        )
-        if newest_before:
-            self.assertNotEqual(
-                newest_before['id'],
-                newest_after['id'],
-                "sort_until_done did not insert a new bogo."
-            )
-
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_sort_until_done_creates_a_backup(self, xs):
-        date_before = datetime.datetime.utcnow()
-
-        with mock.patch("bogo.main.bogo_random", self.random):
-            self.random.seed(config.RANDOM_SEED)
-            random_state_before = self.random.getstate()
-            with main.flask_app.app_context():
-                main.sort_until_done(xs)
-
-        newest_backup_after = self._get_newest_backup()
-
-        self.assertIsNotNone(
-            newest_backup_after,
-            "sort_until_done did not create a backup."
-        )
-        self.assertTupleEqual(
-            ast.literal_eval(newest_backup_after['random_state']),
-            random_state_before,
-            "sort_until_done saved a backup but the random state was not the same as before saving the backup."
-        )
-        self.assertLess(
-            date_parser.parse(newest_backup_after['saved']) - date_before,
-            datetime.timedelta(seconds=5),
-            "The timedelta of right before calling sort_until_done, compared to the saved date in the newest backup was greater than 5 seconds."
-        )
-
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_sort_until_done_closes_the_created_bogo(self, xs):
-        before_sort = datetime.datetime.utcnow()
-        with main.flask_app.app_context():
-            main.sort_until_done(xs)
-
-        newest_bogo = self._get_newest_bogo()
-        finished_date = newest_bogo['finished']
-
-        self.assertIsNotNone(
-            finished_date,
-            "After sort_until_done, the newest bogo should be closed."
-        )
-
-        self.assertLess(
-            date_parser.parse(finished_date) - before_sort,
-            datetime.timedelta(seconds=5),
-            "Timedelta between the time at starting sort_until_done the time it was finished was greater than 5 seconds (when the sequence being sorted was of length {}).".format(len(xs))
-        )
+    #     self._assertFunctionLogs(
+    #         main.bogosort_until_done,
+    #         (xs, ),
+    #         logger_name="bogo.main.celery_logger",
+    #         patterns=expected_patterns
+    #     )
 
 
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    # def test_bogosort_until_done_creates_a_new_bogo(self, xs):
+    #     newest_before = self._get_newest_bogo()
 
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
-    @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
-    def test_bogo_main_initializes_from_config(self):
-        mock_min_length = mock_max_length = 3
-        expected_seq = [3, 2, 1]
-        expected_patterns = (
-            "^Initializing bogo_main with:",
-            "min length: {}".format(mock_min_length),
-            "max length: {}".format(mock_max_length),
-            "backups? found",
-            "^" + re.escape("Cycle {}, call sort_until_done with: {}".format(0, expected_seq))
-        )
-        self._assertFunctionLogs(
-            main.bogo_main,
-            (1,),
-            logger_name="bogo.main.celery_logger",
-            patterns=expected_patterns
-        )
+    #     with main.flask_app.app_context():
+    #         main.bogosort_until_done(xs)
+
+    #     newest_after = self._get_newest_bogo()
+
+    #     self.assertIsNotNone(
+    #         newest_after,
+    #         "bogosort_until_done did not insert a new bogo."
+    #     )
+    #     if newest_before:
+    #         self.assertNotEqual(
+    #             newest_before['id'],
+    #             newest_after['id'],
+    #             "bogosort_until_done did not insert a new bogo."
+    #         )
+
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    # def test_bogosort_until_done_creates_a_backup(self, xs):
+    #     date_before = datetime.datetime.utcnow()
+
+    #     with mock.patch("bogo.main.bogo_random", self.random):
+    #         self.random.seed(config.RANDOM_SEED)
+    #         random_state_before = self.random.getstate()
+    #         with main.flask_app.app_context():
+    #             main.bogosort_until_done(xs)
+
+    #     newest_backup_after = self._get_newest_backup()
+
+    #     self.assertIsNotNone(
+    #         newest_backup_after,
+    #         "bogosort_until_done did not create a backup."
+    #     )
+    #     self.assertTupleEqual(
+    #         ast.literal_eval(newest_backup_after['random_state']),
+    #         random_state_before,
+    #         "bogosort_until_done saved a backup but the random state was not the same as before saving the backup."
+    #     )
+    #     self.assertLess(
+    #         date_parser.parse(newest_backup_after['saved']) - date_before,
+    #         datetime.timedelta(seconds=5),
+    #         "The timedelta of right before calling bogosort_until_done, compared to the saved date in the newest backup was greater than 5 seconds."
+    #     )
+
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    # def test_bogosort_until_done_closes_the_created_bogo(self, xs):
+    #     before_sort = datetime.datetime.utcnow()
+    #     with main.flask_app.app_context():
+    #         self._insert_bogo(xs)
+    #         seq, total_iterations = main.bogosort_until_done(xs, 1.0)
+    #         newest_bogo = self._get_newest_bogo()
+    #         main.close_bogo(newest_bogo['id'], self.random, total_iterations)
+
+    #     finished_date = newest_bogo['finished']
+
+    #     self.assertIsNotNone(
+    #         finished_date,
+    #         "After bogosort_until_done, the newest bogo should be closed."
+    #     )
+
+    #     self.assertLess(
+    #         date_parser.parse(finished_date) - before_sort,
+    #         datetime.timedelta(seconds=5),
+    #         "Timedelta between the time at starting bogosort_until_done the time it was finished was greater than 5 seconds (when the sequence being sorted was of length {}).".format(len(xs))
+    #     )
 
 
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
-    @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
-    def test_bogo_main_starts_from_new_sequence_if_no_backups_exist(self):
-        expected_seq = [3, 2, 1]
-        expected_patterns = (
-            "^.",
-            "^.",
-            "^.",
-            "^No backups found, starting a new bogo cycle.",
-            "^" + re.escape("Cycle {}, call sort_until_done with: {}".format(0, expected_seq))
-        )
-        self._assertFunctionLogs(
-            main.bogo_main,
-            (1,),
-            logger_name="bogo.main.celery_logger",
-            patterns=expected_patterns
-        )
+
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
+    # @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
+    # def test_bogo_main_initializes_from_config(self):
+    #     mock_min_length = mock_max_length = 3
+    #     expected_seq = [3, 2, 1]
+    #     expected_patterns = (
+    #         "^Initializing bogo_main with:",
+    #         "min length: {}".format(mock_min_length),
+    #         "max length: {}".format(mock_max_length),
+    #         "backups? found",
+    #         "^" + re.escape("Cycle {}, call bogosort_until_done with: {}".format(0, expected_seq))
+    #     )
+    #     self._assertFunctionLogs(
+    #         main.bogo_main,
+    #         (1,),
+    #         logger_name="bogo.main.celery_logger",
+    #         patterns=expected_patterns
+    #     )
 
 
-    @mock.patch('bogo.main.redis_app', mock_redis_app)
-    @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
-    @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
-    @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
-    def test_bogo_main_starts_from_correct_backup(self, xs):
-        self._insert_bogo(xs)
-        backup = self._backup_and_retrieve(xs)
-        backup_seq = ast.literal_eval(backup['sequence'])
-        expected_patterns = (
-            "^.",
-            "^.",
-            "^.",
-            "^" + re.escape("Previous backup found, seq of len {}".format(len(backup_seq))),
-            "^" + re.escape("Resuming sorting with backup: {}".format(backup_seq))
-        )
-        self._assertFunctionLogs(
-            main.bogo_main,
-            (0,),
-            logger_name="bogo.main.celery_logger",
-            patterns=expected_patterns
-        )
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
+    # @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
+    # def test_bogo_main_starts_from_new_sequence_if_no_backups_exist(self):
+    #     expected_seq = [3, 2, 1]
+    #     expected_patterns = (
+    #         "^.",
+    #         "^.",
+    #         "^.",
+    #         "^No backups found, starting a new bogo cycle.",
+    #         "^" + re.escape("Cycle {}, call bogosort_until_done with: {}".format(0, expected_seq))
+    #     )
+    #     self._assertFunctionLogs(
+    #         main.bogo_main,
+    #         (1,),
+    #         logger_name="bogo.main.celery_logger",
+    #         patterns=expected_patterns
+    #     )
+
+
+    # @mock.patch('bogo.main.redis_app', mock_redis_app)
+    # @mock.patch("bogo.config.SEQUENCE_MAX_LENGTH", 3)
+    # @mock.patch("bogo.config.SEQUENCE_MIN_LENGTH", 3)
+    # @given(xs=LIST_THREE_INTEGERS_SHUFFLED)
+    # def test_bogo_main_starts_from_correct_backup(self, xs):
+    #     self._insert_bogo(xs)
+    #     backup = self._backup_and_retrieve(xs)
+    #     backup_seq = ast.literal_eval(backup['sequence'])
+    #     expected_patterns = (
+    #         "^.",
+    #         "^.",
+    #         "^.",
+    #         "^" + re.escape("Previous backup found, seq of len {}".format(len(backup_seq))),
+    #         "^" + re.escape("Resuming sorting with backup: {}".format(backup_seq))
+    #     )
+    #     self._assertFunctionLogs(
+    #         main.bogo_main,
+    #         (0,),
+    #         logger_name="bogo.main.celery_logger",
+    #         patterns=expected_patterns
+    #     )
 
 
     @given(xs_stream=STREAM_LIST_RANGE_INTEGERS,

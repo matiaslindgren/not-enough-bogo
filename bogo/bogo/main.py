@@ -11,7 +11,7 @@ import bogo.config as config
 import bogo.util as util
 
 
-flask_app, celery_app, celery_logger, redis_app = util.make_app(__name__)
+flask_app, celery_app, worker_logger, redis_app = util.make_app(__name__)
 
 bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)
@@ -23,7 +23,7 @@ bogo_random.seed(config.RANDOM_SEED)
 
 def update_iteration_speed(iter_per_second):
     return (redis_app.set("iter_speed", iter_per_second) and
-            redis_app.expire("iter_speed", 3))
+            redis_app.expire("iter_speed", config.ITER_SPEED_CACHE_EXPIRE_SECONDS))
 
 def update_total_iterations(total_iterations):
     return redis_app.set("total_iterations", total_iterations)
@@ -68,6 +68,9 @@ def get_full_stats(bogo_id):
 # ROUTES
 ##############################
 
+# TODO
+# cache = flask_cache.Cache(flask_app)
+# @cache.cached(timeout=60)
 @flask_app.route("/")
 def index():
     bogo_id = get_active_bogo_id()
@@ -171,103 +174,74 @@ def sequence_generator(start, stop):
     return itertools.cycle(tuple(reversed(range(1, n))) for n in range(start+1, stop+2))
 
 
-# TODO: rethink the duties of this function and bogo_main, who
-# should write the bogos and how to restart backups?
-def sort_until_done(sequence, from_backup=False, init_total_iterations=0):
+def bogosort_until_done(sequence, cache_interval):
     """
-    A stateful mess which shuffles the given sequence until it is sorted.
-    If from_backup is given and True, this function will not create a new bogo into the database.
-    If from_backup is False, a new bogo will be written into the database.
-    Writes backups of the sorting state at BACKUP_INTERVAL iterations.
+    Given sequence, bogosort it until it is sorted, while caching state.
     """
-    total_iterations = init_total_iterations
-    backup_interval = config.BACKUP_INTERVAL
-    iter_speed_resolution = config.ITER_SPEED_RESOLUTION
-
-    if from_backup:
-        bogo = get_newest_bogo()
-        if not bogo or not bogo['id']:
-            raise RuntimeError("Attempted to restart from backup but get_newest_bogo returned {}.".format(tuple(bogo)))
-
-        this_bogo_id = bogo['id']
-        celery_logger.info('Sorting a backup, fetched the id {} from the database.'.format(this_bogo_id))
-        overwrite_bogo_cache(this_bogo_id, len(sequence))
-    else:
-        this_bogo_id = create_new_bogo(sequence)
-        celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
-
-        backup_sorting_state(sequence, bogo_random, total_iterations)
-
-    celery_logger.info('Begin bogosorting with:\nsequence: {}\nbogo id: {}\nbackup interval: {}\niter speed resolution: {}.'.format(sequence, this_bogo_id, backup_interval, iter_speed_resolution))
-
-    iteration = 0
-    cycle_total_time = 0.0
+    delta_iterations = 0
+    delta_seconds = 0.0
+    total_iterations = 0
 
     while not is_sorted(sequence):
-        begin_time = time.perf_counter()
+        perf_counter_start = time.perf_counter()
         bogo_random.shuffle(sequence)
-        if iteration >= backup_interval:
-            celery_logger.info('Writing backup for bogo {}'.format(this_bogo_id))
-            backup_sorting_state(sequence, bogo_random, total_iterations)
-            iteration = 0
-        iteration += 1
+        delta_iterations += 1
         total_iterations += 1
-        cycle_total_time += time.perf_counter() - begin_time
-        if iteration % iter_speed_resolution == 0:
-            update_iteration_speed(iter_speed_resolution/cycle_total_time)
+        delta_seconds += time.perf_counter() - perf_counter_start
+        if delta_seconds >= cache_interval:
+            update_iteration_speed(delta_iterations)
             update_total_iterations(total_iterations)
-            cycle_total_time = 0.0
+            delta_iterations = 0
+            delta_seconds = 0.0
 
-    celery_logger.info('Done sorting bogo {} in {} iterations.'.format(this_bogo_id, total_iterations))
-
-    close_bogo(this_bogo_id, total_iterations)
-    celery_logger.info('Bogo {} closed.'.format(this_bogo_id))
-
-    if redis_app.flushall():
-        celery_logger.info('Flushed all keys from the redis instance.')
-    else:
-        celery_logger.error('Flushing all redis keys failed.')
+    return sequence, total_iterations
 
 
-@celery_app.task(ignore_result=True)
-def bogo_main(max_cycles=None):
+def bogo_main(min_length, max_length, max_cycles=None):
     """
-    Main sorting function responsible of sorting every defined sequence from
-    list(range(1, 11)) up to list(range(1, config.SEQUENCE_MAX_LENGTH)).
-    It might be a good idea to run this in a thread.
-
+    A stateful mess which is responsible of the main sorting process.
     Automatically restarts from previous known state.
+
+    Args:
+        min_length (int): Length of the first generated sequence in every cycle.
+        max_length (int): Length of the last generated sequence in every cycle.
+        max_cycles (int): (Optional) Maximum amount of generated cycles until the generation loop terminates. If not given, 'infinite' is assumed.
     """
-    min_length = config.SEQUENCE_MIN_LENGTH
-    max_length = config.SEQUENCE_MAX_LENGTH
-    celery_logger.info("Initializing bogo_main with:\nmin length: {}\nmax length: {}".format(min_length, max_length))
-    previous_state = get_previous_state_all()
+    worker_logger.info("Starting sequence cycle generation with next sequence length {} and max length {}.".format(min_length, max_length))
+    if max_cycles:
+        worker_logger.info("Max cycles limited to {}.".format(max_cycles))
 
-    if previous_state:
-        previous_seq = ast.literal_eval(previous_state['sequence'])
-        celery_logger.info("Previous backup found, seq of len {}".format(len(previous_seq)))
+    first_length = min_length
+    bogo = get_newest_bogo()
 
-        next_seq_len = min(max_length, len(previous_seq) + 1)
-
-        previous_random = ast.literal_eval(previous_state['random_state'])
-        bogo_random.setstate(previous_random)
-
-        backup_iterations = previous_state['total_iterations']
-
-        celery_logger.info("Resuming sorting with backup: {}".format(previous_seq))
-        sort_until_done(previous_seq, from_backup=True, init_total_iterations=backup_iterations)
-        celery_logger.info("Backup sequence sorted: {}".format(previous_seq))
+    if bogo is not None:
+        worker_logger.info("Found a previous bogo of id {}.".format(bogo['id']))
+        worker_logger.info("Reloading state.")
+        bogo_random.setstate(ast.literal_eval(bogo['random_state']))
+        first_length = bogo['sequence_length']
+        if bogo['finished'] is not None:
+            first_length += 1
     else:
-        celery_logger.info("No backups found, starting a new bogo cycle.")
-        next_seq_len = min_length
+        worker_logger.info("Database is empty, starting new cycle.")
 
-    for cycle, seq in enumerate(map(list, sequence_generator(next_seq_len, max_length))):
+    sequence_cycle = map(list, sequence_generator(min_length, max_length))
+    if first_length != min_length:
+        worker_logger.info("Fast forwarding sequence generator to {}.".format(first_length))
+        sequence_cycle = itertools.dropwhile(lambda seq: len(seq) != first_length, sequence_cycle)
+
+    for cycle, seq in enumerate(sequence_cycle):
+        worker_logger.info("Cycle {} starting".format(cycle))
         if max_cycles is not None and cycle > max_cycles:
-            celery_logger.info("Reached max cycle {}, bogo_main returning".format(cycle))
+            worker_logger.info("Reached max cycle {}, bogo_main terminating.".format(cycle))
             break
-        celery_logger.info("Cycle {}, call sort_until_done with: {}".format(cycle, seq))
-        sort_until_done(seq)
-        celery_logger.info("Cycle {}, sort_until_done returned, parameter is now {}".format(cycle, seq))
+        worker_logger.info("Creating a new bogo with sequence of length {}.".format(len(seq)))
+        bogo_id = create_new_bogo(seq)
+        worker_logger.info("Begin bogosorting sequence {}.".format(seq))
+        seq, total_iterations = bogosort_until_done(seq, 1.0)
+        worker_logger.info("bogosort_until_done sorted sequence {} with {} iterations.".format(seq, total_iterations))
+        worker_logger.info("Closing bogo {}.".format(bogo_id))
+        close_bogo(bogo_id, bogo_random, total_iterations)
+        worker_logger.info("Cycle {} finished.".format(cycle))
 
 
 ##############################
@@ -318,10 +292,11 @@ def create_new_bogo(sequence):
     Insert a new bogo into the database and redis cache.
     Return its id.
     """
-    query = "insert into bogos (sequence_length, started) values (?, ?)"
+    query = "insert into bogos (sequence_length, started, random_state) values (?, ?, ?)"
     data = (
         len(sequence),
-        datetime.datetime.utcnow().isoformat()
+        datetime.datetime.utcnow().isoformat(),
+        repr(bogo_random.getstate())
     )
     cursor = execute_and_commit(query, data)
     bogo_id = cursor.lastrowid
@@ -330,9 +305,10 @@ def create_new_bogo(sequence):
     return bogo_id
 
 
-def close_bogo(bogo_id, total_iterations):
+def close_bogo(bogo_id, random_instance, total_iterations):
     """
-    Update bogo with finished date set to now and total_iterations given as parameter.
+    Update bogo with finished date set to now, total_iterations given as parameter and with the state of the random instance.
+    Clears the redis cache.
     """
     fetch_query = "select * from bogos where id=?"
     bogo = execute_and_fetch_one(fetch_query, (bogo_id, ))
@@ -342,28 +318,16 @@ def close_bogo(bogo_id, total_iterations):
     if bogo['finished']:
         raise RuntimeError("Attempted to close a bogo with id {} but it already had an end date {}.".format(bogo_id, bogo['finished']))
 
-    query = "update bogos set finished=? where id=?"
-    data = (datetime.datetime.utcnow().isoformat(), bogo_id)
-    execute_and_commit(query, data)
-    query = "update bogos set iterations=? where id=?"
-    data = (total_iterations, bogo_id)
-    execute_and_commit(query, data)
-
-
-def backup_sorting_state(sequence, random_instance, total_iterations):
-    """
-    Write backup of the current sorting state.
-    Returns the id of the inserted backup row.
-    """
-    query = "insert into backups (sequence, random_state, saved, total_iterations) values (?, ?, ?, ?)"
-    backup_data = (
-        repr(sequence),
-        repr(random_instance.getstate()),
+    # TODO surely this can be unDRYed
+    query = "update bogos set finished=?, random_state=?, iterations=? where id=?"
+    data = (
         datetime.datetime.utcnow().isoformat(),
-        total_iterations
+        repr(random_instance.getstate()),
+        total_iterations,
+        bogo_id
     )
-    cursor = execute_and_commit(query, backup_data)
-    return cursor.lastrowid
+    execute_and_commit(query, data)
+    redis_app.flushall()
 
 
 def get_db_stats(bogo_id):
@@ -388,8 +352,8 @@ def get_bogo_by_id_or_404(bogo_id):
 def execute_and_fetch_one(query, args=()):
     return get_db().execute(query, args).fetchone()
 
-def get_previous_state_all():
-    return execute_and_fetch_one("select * from backups order by saved desc")
+def get_previous_state():
+    return execute_and_fetch_one("select * from backups order by saved desc limit 1")
 
 def get_newest_bogo():
     return execute_and_fetch_one("select * from bogos order by started desc")
@@ -414,7 +378,12 @@ def get_adjacent_bogos(bogo):
 
 @flask_app.cli.command("run_bogo")
 def run_bogo_command():
-    bogo_main.delay()
+    init_data = {
+        "min_length": config.SEQUENCE_MIN_LENGTH,
+        "max_length": config.SEQUENCE_MAX_LENGTH,
+    }
+    # TODO init workers
+    bogo_main(**init_data)
 
 
 @flask_app.cli.command('initdb')
