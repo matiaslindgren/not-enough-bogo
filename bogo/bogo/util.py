@@ -36,10 +36,3 @@ def make_redis():
         db=0,
         decode_responses=config.REDIS_DECODE_RESPONSES
     )
-
-
-def make_app(name):
-    flask_app = make_flask(name)
-    worker_logger = make_worker_logger(name)
-    redis_app = make_redis()
-    return flask_app, worker_logger, redis_app

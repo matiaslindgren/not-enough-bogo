@@ -11,7 +11,7 @@ import bogo.config as config
 import bogo.util as util
 
 
-flask_app, worker_logger, redis_app = util.make_app(__name__)
+flask_app, redis_app = util.make_flask(__name__), util.make_redis()
 
 bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)
@@ -409,4 +409,5 @@ def initdb_command():
         print("Cancelled")
 
 
-
+if __name__ == "__main__":
+    worker_logger = util.make_worker_logger(__name__)
