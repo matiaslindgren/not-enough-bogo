@@ -148,8 +148,9 @@ def active_state():
 
 
 ##############################
-# BOGO LOGIC
+# BOGO LOGIC, hold on to your hat: exceedingly imperative stuff ahead
 ##############################
+
 
 def is_sorted(xs):
     return all(xs[i-1] < xs[i] for i in range(1, len(xs)))
@@ -318,7 +319,6 @@ def close_bogo(bogo_id, random_instance, total_iterations):
     if bogo['finished']:
         raise RuntimeError("Attempted to close a bogo with id {} but it already had an end date {}.".format(bogo_id, bogo['finished']))
 
-    # TODO surely this can be unDRYed
     query = "update bogos set finished=?, random_state=?, iterations=? where id=?"
     data = (
         datetime.datetime.utcnow().isoformat(),
@@ -382,7 +382,6 @@ def run_bogo_command():
         "min_length": config.SEQUENCE_MIN_LENGTH,
         "max_length": config.SEQUENCE_MAX_LENGTH,
     }
-    # TODO init workers
     bogo_main(**init_data)
 
 

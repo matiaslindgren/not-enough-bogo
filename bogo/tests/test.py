@@ -104,6 +104,8 @@ class Test(unittest.TestCase):
             fetch_query = "select * from bogos order by started desc"
             return db.execute(fetch_query).fetchone()
 
+
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_create_new_bogo_database_has_correct_values(self, xs):
         before_insert = datetime.datetime.utcnow()
@@ -131,14 +133,13 @@ class Test(unittest.TestCase):
             "Timedelta between the time at saving a new bogo and the time stored in the database was greater than 5 seconds."
         )
 
+
     @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED)
     def test_create_new_bogo_redis_cache_has_correct_values(self, xs):
         with main.flask_app.app_context():
             bogo_id = main.create_new_bogo(xs)
-
-        redis_key_not_set_msg = "create_new_bogo did not update the redis cache."
-        with main.flask_app.app_context():
+            redis_key_not_set_msg = "create_new_bogo did not update the redis cache."
             self.assertEqual(
                 str(bogo_id),
                 main.redis_app.get("active_bogo_id"),
@@ -233,6 +234,8 @@ class Test(unittest.TestCase):
                 "The sequence of pseudorandom floats was different when the state was reloaded from the db."
             )
 
+
+    @mock.patch('bogo.main.redis_app', mock_redis_app)
     @given(xs=LIST_RANGE_INTEGERS_SHUFFLED,
            state_change_count=strategies.integers(min_value=0, max_value=10000))
     def test_close_bogo_random_state_preserves_the_pseudorandom_sequence(self, xs, state_change_count):
@@ -267,7 +270,7 @@ class Test(unittest.TestCase):
     def test_bogosort_until_done_sorts_unsorted_sequence(self, xs):
         with main.flask_app.app_context():
             main.bogosort_until_done(xs, 0.0)
-        self.assertTrue(main.is_sorted(xs), "Bogosorting did not sort the sequence.")
+            self.assertTrue(main.is_sorted(xs), "Bogosorting did not sort the sequence.")
 
 
     # @mock.patch('bogo.main.redis_app', mock_redis_app)
