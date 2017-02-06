@@ -198,6 +198,19 @@ def bogosort_until_done(sequence, cache_interval):
     return sequence, total_iterations
 
 
+def bogo_cycle(sequence):
+    """
+    Create bogo into database for sequence, bogosort it and save the result.
+    """
+    worker_logger.debug("Creating a new bogo with sequence of length {}.".format(len(sequence)))
+    bogo_id = create_new_bogo(sequence)
+    worker_logger.debug("Begin bogosorting sequence {}.".format(sequence))
+    sorted_sequence, total_iterations = bogosort_until_done(sequence, 1.0)
+    worker_logger.debug("bogosort_until_done sorted sequence {} with {} iterations.".format(sorted_sequence, total_iterations))
+    worker_logger.debug("Closing bogo {}.".format(bogo_id))
+    close_bogo(bogo_id, bogo_random, total_iterations)
+
+
 def bogo_main(min_length, max_length, max_cycles=None):
     """
     A stateful mess which is responsible of the main sorting process.
@@ -208,41 +221,42 @@ def bogo_main(min_length, max_length, max_cycles=None):
         max_length (int): Length of the last generated sequence in every cycle.
         max_cycles (int): (Optional) Maximum amount of generated cycles until the generation loop terminates. If not given, 'infinite' is assumed.
     """
-    worker_logger.info("Starting sequence cycle generation with next sequence length {} and max length {}.".format(min_length, max_length))
+    worker_logger.debug("Starting sequence cycle generation with first sequence length {} and max length {}.".format(min_length, max_length))
     if max_cycles:
-        worker_logger.info("Max cycles limited to {}.".format(max_cycles))
+        worker_logger.debug("Max cycles limited to {}.".format(max_cycles))
 
-    first_length = min_length
+    sequence_cycle = map(list, sequence_generator(min_length, max_length))
+
     bogo = get_newest_bogo()
 
     if bogo is not None:
-        worker_logger.info("Found a previous bogo of id {}.".format(bogo['id']))
-        worker_logger.info("Reloading state.")
+        worker_logger.debug("Found a previous bogo of id {}, length {}.".format(bogo['id'], bogo['sequence_length']))
+        worker_logger.debug("Reloading state.")
         bogo_random.setstate(ast.literal_eval(bogo['random_state']))
         first_length = bogo['sequence_length']
-        if bogo['finished'] is not None:
-            first_length += 1
-    else:
-        worker_logger.info("Database is empty, starting new cycle.")
-
-    sequence_cycle = map(list, sequence_generator(min_length, max_length))
-    if first_length != min_length:
-        worker_logger.info("Fast forwarding sequence generator to {}.".format(first_length))
+        worker_logger.debug("Fast forwarding sequence generator next sequence length to {}.".format(first_length))
         sequence_cycle = itertools.dropwhile(lambda seq: len(seq) != first_length, sequence_cycle)
+        if bogo['finished'] is None:
+            worker_logger.debug("Previous bogo is not finished.")
+            worker_logger.debug("Begin sorting unfinished bogo.")
+            sorted_sequence, total_iterations = bogosort_until_done(next(sequence_cycle), 1.0)
+            worker_logger.debug("bogosort_until_done sorted sequence {} with {} iterations.".format(sorted_sequence, total_iterations))
+            worker_logger.debug("Closing bogo {}.".format(bogo['id']))
+            close_bogo(bogo['id'], bogo_random, total_iterations)
+            worker_logger.debug("Unfinished bogo sorted, proceeding with main cycle.")
+        else:
+            first_length += 1
+            worker_logger.debug("Previous bogo was finished, begin main cycle from sequence length {}.".format(first_length))
+    else:
+        worker_logger.debug("Database is empty, starting new cycle.")
 
     for cycle, seq in enumerate(sequence_cycle):
-        worker_logger.info("Cycle {} starting".format(cycle))
+        worker_logger.debug("Cycle {} starting".format(cycle))
         if max_cycles is not None and cycle > max_cycles:
-            worker_logger.info("Reached max cycle {}, bogo_main terminating.".format(cycle))
+            worker_logger.debug("Reached max cycle {}, bogo_main terminating.".format(cycle))
             break
-        worker_logger.info("Creating a new bogo with sequence of length {}.".format(len(seq)))
-        bogo_id = create_new_bogo(seq)
-        worker_logger.info("Begin bogosorting sequence {}.".format(seq))
-        seq, total_iterations = bogosort_until_done(seq, 1.0)
-        worker_logger.info("bogosort_until_done sorted sequence {} with {} iterations.".format(seq, total_iterations))
-        worker_logger.info("Closing bogo {}.".format(bogo_id))
-        close_bogo(bogo_id, bogo_random, total_iterations)
-        worker_logger.info("Cycle {} finished.".format(cycle))
+        bogo_cycle(seq)
+        worker_logger.debug("Cycle {} finished.".format(cycle))
 
 
 ##############################
