@@ -11,7 +11,7 @@ import bogo.config as config
 import bogo.util as util
 
 
-flask_app, celery_app, worker_logger, redis_app = util.make_app(__name__)
+flask_app, worker_logger, redis_app = util.make_app(__name__)
 
 bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)

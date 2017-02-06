@@ -15,17 +15,19 @@ def make_flask(name):
     )
     flask_app.config.update(
         DATABASE=os.path.join(flask_app.root_path, config.DATABASE_NAME),
-        CELERY_BROKER_URL=config.BROKER_URL,
         DATABASE_SCHEMA=os.path.join(flask_app.root_path, config.SCHEMA_NAME),
         TEMPLATES_AUTO_RELOAD=config.TEMPLATES_AUTO_RELOAD
     )
     return flask_app
 
 
-def make_celery_logger(name):
-    celery_logger = celery_log.get_task_logger(name)
-    celery_logger.setLevel(logging.DEBUG)
-    return celery_logger
+def make_worker_logger(name):
+    file_handler = logging.FileHandler(config.WORKER_LOGGER_PATH)
+    file_handler.setLevel(logging.DEBUG)
+    worker_logger = logging.getLogger(name)
+    worker_logger.setLevel(logging.DEBUG)
+    worker_logger.addHandler(file_handler)
+    return worker_logger
 
 
 def make_redis():
@@ -39,7 +41,6 @@ def make_redis():
 
 def make_app(name):
     flask_app = make_flask(name)
-    celery_app = tasks.make_celery(flask_app)
-    celery_logger = make_celery_logger(name)
+    worker_logger = make_worker_logger(name)
     redis_app = make_redis()
-    return flask_app, celery_app, celery_logger, redis_app
+    return flask_app, worker_logger, redis_app
