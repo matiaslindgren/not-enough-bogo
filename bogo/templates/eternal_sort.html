@@ -2,6 +2,17 @@
 {% block body_content %}
 
 <div class="container" id="dummy-sort-container">
+  <div class="caution-prompt-container">
+    <div class="container text-container">
+      <p>
+        An animation containing a shuffle of 10000 columns will be created here.
+        It will not be insanely demanding on the cpu but might freeze the browser on slow computers or mobile devices.
+      </p>
+    </div>
+    <button type="button" class="btn btn-default" onclick="createAnimation(this)">
+      My browser can handle it/I don't care
+    </button>
+  </div>
 </div>
 
 <script id="backend-render-context" type="application/json">
