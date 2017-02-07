@@ -26,14 +26,22 @@
 
       <nav class="navbar navbar-default">
         <div class="container">
-         <ul class="nav navbar-nav">
-           <li><a href="{{ url_for('about') }}">WTF?</a></li>
-           <li><a href="{{ url_for('eternal_sort') }}">Please, more.</a></li>
-           <li><a href="{{ url_for('index') }}">
-              <span class="glyphicon glyphicon-home" aria-hidden="true"></span></a></li>
-           <li><a href="{{ url_for('statistics') }}">Statistics</a></li>
-           <li><a href="{{ url_for('source') }}">Source</a></li>
-          </ul>
+             <a class="col-xs-2 col-xs-offset-1"
+                href="{{ url_for('about') }}"
+                style="text-align: right;">WTF?</a>
+             <a class="col-xs-2"
+                href="{{ url_for('eternal_sort') }}"
+                style="text-align: right;">Please, more.</a>
+             <a class="col-xs-2"
+                href="{{ url_for('index') }}"
+                style="text-align: center;">
+               <span class="glyphicon glyphicon-home" aria-hidden="true"></span></a>
+             <a class="col-xs-2"
+                href="{{ url_for('statistics') }}"
+                style="text-align: left;">Statistics</a>
+             <a class="col-xs-2"
+                href="https://github.com/matiaslindgren/not-enough-bogo"
+                style="text-align: left;">Source</a>
         </div>
       </nav>
 
