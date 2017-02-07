@@ -229,7 +229,7 @@ function Table(props) {
               }
               <Row label="Total amount of shuffles" value={props.totalIterations} />
               <TooltipRow
-                  label="Probability of hitting a sorted sequence"
+                  label="Probability of finding a sorted sequence"
                   value={sortProbability}
                   tooltip={"Same probability as tossing a fair coin " + probabilityAsCoinTosses + " times in a row and getting the same result every time."}/>
               <Row label="Bogosorting started at" value={startDateString} />
