@@ -36,7 +36,7 @@
 
     <p>
     This ridiculousness may rightly be dismissed as inefficiency but I find all kinds of dadaistic stupidity quite calming due to their non-belligerent and casual nature.
-    Moreover, the simple thought of optimizing the pivots of an in-place quicksort algorithm to cover all possible edge-cases, while sobbingly tinkering with 9 different C++ pointers due to off-by-one errors makes me want to ferociously rip away my cheeks.
+    Moreover, the simple thought of optimizing the pivots of an in-place quicksort algorithm to cover all possible edge-cases, while sobbingly tinkering with 9 different C++ pointers due to off-by-one errors makes me want to ferociously rip off my cheeks.
     </p>
 
     <p>
@@ -57,12 +57,12 @@
     $${40\choose{7}} = 18643560.$$
     So the probability of choosing exactly the same 7 numbers as you have chosen is approximately:
     $$\frac{1}{40\choose{7}} = 5.4\cdot10^{-8} \approx 0.00000005.$$
-    If we call the probability of winning at the lottery \(p_l\), then winning the lottery \(n\) times in a row is \(p_l^n\).
-    If we call the probability of the bogosort algorithm finding a sorted permutation from a sequence of 100 unique integers \(p_b\), then we want to find how large \(n\) must be in order for the probabilities to be equal:
+    If we call the probability of winning at the lottery \(P_L\), then winning the lottery \(n\) times in a row happens with probability \(P_L^n\).
+    If the bogosort algorithm finds a sorted permutation from a sequence of 100 unique integers with probability \(P_B\), then we want to find how large \(n\) must be in order for the probabilities to be equal:
     $$\begin{align}
-      p_l^n &= p_b \\[3px]
-      n\cdot\log{p_l} &= \log{p_b} \\[3px]
-      n &= \frac{\log{p_b}}{\log{p_l}} \\[3px]
+      P_L^n &= P_B \\[3px]
+      n\cdot\log{P_L} &= \log{P_B} \\[3px]
+      n &= \frac{\log{P_B}}{\log{P_L}} \\[3px]
       n &= \frac{\log{9.33\cdot10^{-157}}}{\log{5.4\cdot10^{-8}}} \\[3px]
       n &= \frac{\log{9.33} - 157}{\log{5.4} -8} \\[3px]
       n &\approx 24.7
@@ -70,7 +70,7 @@
     </p>
 
     <p>
-    If you have already some lottery 24 times in a row and feel that this is nothing, then try watching (not for slow computers or mobile devices!) an <a href="{{ url_for('eternal_sort') }}">animation</a> of a bogosort of 10 000 elements. It is rather calming, in fact. Almost like listening to the rain.
+    If you have already won the lottery 24 times in a row and feel that this is nothing, then try watching a <a href="{{ url_for('eternal_sort') }}">bogosort of 10 000 elements</a>. It is rather calming, in fact. Almost like listening to the rain.
     </p>
 
   </div>
