@@ -6,16 +6,6 @@ html {
     line-height: 1.4;
 }
 
-::-moz-selection {
-    background: #e2e2e2;
-    text-shadow: none;
-}
-
-::selection {
-    background: #e2e2e2;
-    text-shadow: none;
-}
-
 hr {
     display: block;
     height: 1px;
@@ -55,6 +45,16 @@ textarea {
 /* ==========================================================================
    Author's custom styles
    ========================================================================== */
+
+::-moz-selection {
+    background: #555;
+    color: #ddd;
+}
+
+::selection {
+    background: #555;
+    color: #ddd;
+}
 
 body {
   font-family: serif;
