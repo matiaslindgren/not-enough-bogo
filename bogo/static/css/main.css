@@ -92,35 +92,19 @@ body {
   margin-bottom: 40px;
 }
 
-/* TODO: fix the navbar centering hack */
-/* ul.nav > li { */
-/*   text-align: center; */
-/*   width: 20%; */
-/* } */
-
-/* nav > .container { */
-/*   padding-left: 0; */
-/* } */
-
-.navbar .navbar-nav {
-  display: inline-block;
-  float: none;
-}
-
 #collapse-toggle-container,
 #bogo-title-container {
   margin-bottom: 10px;
 }
 
-
 #body-container .table-hover > tbody > tr:hover {
   background-color: #dcdcdc;
-
 }
 
 #collapse-toggle {
   font-weight: bold;
-  color: #484848;
+  color: #0a0a0a;
+  background-color: transparent;
 }
 
 #collapse-toggle:focus {
@@ -139,16 +123,24 @@ tbody > tr > td:last-child {
   text-align: left;
 }
 
+.navbar a {
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+.navbar a,
 body a {
-  color: #484848;
+  color: #666;
   text-decoration: none;
   font-weight: bold;
 }
 
+.navbar a:focus,
+.navbar a:hover,
 body a:focus,
 body a:hover {
   color: #0a0a0a;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .pager li > a,
