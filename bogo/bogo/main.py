@@ -81,17 +81,16 @@ def index():
         bogo_id = bogo['id']
     return flask.redirect(flask.url_for("view_bogo", bogo_id=bogo_id))
 
+
 @flask_app.route("/about")
 def about():
     return flask.render_template('about.html')
+
 
 @flask_app.route("/statistics")
 def statistics():
     return flask.render_template('statistics.html')
 
-@flask_app.route("/source")
-def source():
-    return flask.render_template('source.html')
 
 @flask_app.route("/eternal")
 def eternal_sort():
