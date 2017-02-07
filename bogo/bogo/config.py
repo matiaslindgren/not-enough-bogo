@@ -1,13 +1,13 @@
 
-BROKER_URL = 'redis://localhost:6379/0'
-
 REDIS_PORT = '6379'
 REDIS_DECODE_RESPONSES = True
+BROKER_URL = 'redis://localhost:{}/0'.format(REDIS_PORT)
 
-WORKER_LOGGER_PATH = '/var/log/not-enough-bogo/worker.log'
+TEMPLATES_AUTO_RELOAD = True
 
 DATABASE_NAME = 'app.db'
 SCHEMA_NAME = "schema.sql"
+APP_CONTEXT_DATABASE_NAME = "_" + DATABASE_NAME.replace(".", "_")
 
 RANDOM_SEED = 42
 SEQUENCE_MAX_LENGTH = 14
@@ -16,8 +16,5 @@ ITER_SPEED_CACHE_EXPIRE_SECONDS = 3
 
 DUMMY_SORT_COLUMN_COUNT = 10000
 
-TEMPLATES_AUTO_RELOAD = True
-
-APP_CONTEXT_DATABASE_NAME = "_" + DATABASE_NAME.replace(".", "_")
-
+WORKER_LOGGER_PATH = '/var/log/not-enough-bogo/worker.log'
 
