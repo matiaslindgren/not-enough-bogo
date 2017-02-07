@@ -23,7 +23,7 @@
     <p>
     The randomized bogosort algorithm has an unbounded worst-case time complexity,
     which means the amount of time required to sort a sequence is unknown.
-    It is not difficult to come up with examples which work essentially in the same way as the randomized bogosort algorithm.
+    The uselessness of the bogosort algorithm can easily be understood using an example.
     Lets say you would like to play Chopin's Etude Op.25 No.9 but you have never practiced the piece.
     Lets say there is only one sequence (ignoring dynamics and all the fancy artistic stuff) of notes which is considered the 'correct' way to play the piece.
     Finding this sequence using a bogosort algorithm would work as follows:
@@ -36,11 +36,11 @@
 
     <p>
     This ridiculousness may rightly be dismissed as inefficiency but I find all kinds of dadaistic stupidity quite calming due to their non-belligerent and casual nature.
-    Moreover, the simple thought of optimizing a multi-pivot, in-place quicksort algorithm to cover all possible edge-cases, while sobbingly tinkering with 9 different C++ pointers due to off-by-one errors makes me want to sell all of my electronic equipment and start a new life as a panda baby, rolling around, gnawing on interesting objects.
+    Moreover, the simple thought of optimizing the pivots of an in-place quicksort algorithm to cover all possible edge-cases, while sobbingly tinkering with 9 different C++ pointers due to off-by-one errors makes me want to ferociously rip away my cheeks.
     </p>
 
     <p>
-    Speaking of interesting, what are the chances of a randomized bogosort finding a permutation where all elements are in ascending order?
+    Speaking of fascinating things, what are the chances of a randomized bogosort finding a permutation where all elements are in ascending order?
     If we have a sequence of 10 integers: \(1, 2, 3, 4, 5, 6, 7, 8, 9, 10\), then the total amount of permutations is: $$10! = 3628800.$$
     If we assume the bogosort algorithm generates any distinct permutation with equal probability, then the probability of hitting the one correct, sorted permutation is approximately: $$\frac{1}{10!} = 2.76\cdot10^{-7} \approx 0.0000003.$$
     I initially planned on sorting sequences starting from \(1, 2, 3, ..., 10\); then \(1, 2, 3, ..., 20\); all the way up to \(1, 2, 3, ..., 100\).
@@ -48,10 +48,10 @@
     The total amount of permutations of the sequence \(1, 2, 3, ..., 100\) is:  $$100! = 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000.$$
     which is approximately \(9.33\cdot10^{157}\).
     If we still assume the bogosort algorithm generates any of the \(100!\) permutations with equal probability, then the probability of finding the sorted permutation is approximately: $$\frac{1}{100!} = 9.33\cdot10^{-157} \approx 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003.$$
-    I bet higher odds exist with a high probability (I came here to gamble and make puns like a complete idiot and I'm all out of coins). </p>
+    </p>
 
     <p>
-    Consider a lottery where you choose 7 unique numbers out of 40 different choices.
+    To put things into perspective, consider a lottery where you choose 7 unique numbers out of 40 different choices.
     If exactly these 7 numbers are drawn, you win a shitload of money, also called the jackpot.
     All the different ways of choosing 7 unique numbers from the 40 different choices equals to:
     $${40\choose{7}} = 18643560.$$
