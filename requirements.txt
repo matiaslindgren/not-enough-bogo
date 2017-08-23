@@ -1,9 +1,16 @@
+# Backend
 flask
 celery
 redis
 hiredis
 
-python-dateutil
+# Frontend
+bokeh
 
+# Testing
 hypothesis
 fakeredis
+
+# Utils
+python-dateutil
+
