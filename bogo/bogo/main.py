@@ -6,6 +6,7 @@ import math
 import datetime
 import time
 import itertools
+import logging
 
 import bogo.config as config
 import bogo.util as util
@@ -16,6 +17,8 @@ flask_app, redis_app = util.make_flask(__name__), util.make_redis()
 bogo_random = random.Random()
 bogo_random.seed(config.RANDOM_SEED)
 
+logging.basicConfig(filename='flask.log', level=logging.DEBUG)
+worker_logger = logging.getLogger(__name__)
 
 ##############################
 # REDIS
