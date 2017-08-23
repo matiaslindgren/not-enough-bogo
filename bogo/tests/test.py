@@ -10,7 +10,6 @@ import random
 import os
 import ast
 
-import re
 import io
 import tempfile
 import logging
