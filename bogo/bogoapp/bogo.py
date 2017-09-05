@@ -56,7 +56,7 @@ class Bogo:
         self.shuffles += 1
 
     def is_finished(self):
-        return self.finished or seqtools.is_sorted(self.sequence)
+        return bool(self.finished or seqtools.is_sorted(self.sequence))
 
     def __len__(self):
         return len(self.sequence)
