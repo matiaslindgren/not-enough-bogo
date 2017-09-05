@@ -1,15 +1,12 @@
 # Backend
-flask
-celery
-redis
-hiredis
+sanic
+aioodbc
 
 # Frontend
 bokeh
 
 # Testing
 hypothesis
-fakeredis
 
 # Utils
 python-dateutil
