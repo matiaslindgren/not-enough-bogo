@@ -1,4 +1,5 @@
 import json
+import random
 import os.path
 import logging
 
@@ -6,7 +7,8 @@ import sanic
 import websockets
 
 
-from bogoapp import bogo
+from bogoapp import bogo_manager
+from bogoapp import tools
 from bogoapp import settings
 from bogoapp import db
 from bogoapp import html
@@ -25,16 +27,23 @@ def make_sanic(name):
 def make_bogo_manager():
     min_stop = settings.MINIMUM_SEQUENCE_STOP
     max_stop = settings.MAXIMUM_SEQUENCE_STOP
-    seed = settings.RANDOM_SEED
     sort_limit = getattr(settings, "SORT_LIMIT", 0)
+    unsorted_lists = tools.unsorted_lists(min_stop, max_stop, sort_limit)
+
     speed_resolution = getattr(settings, "SPEED_RESOLUTION", 1)
+
+    random_module = random.Random()
+    random_module.seed(settings.RANDOM_SEED)
+
     dns = settings.ODBC_DNS
     schema = settings.SQL_SCHEMA_PATH
     database = db.Database(dns, schema)
     if not os.path.exists(settings.DATABASE_PATH):
         database.init()
-    return bogo.BogoManager(min_stop, max_stop, sort_limit,
-                            speed_resolution, database, seed)
+
+    return bogo_manager.BogoManager(
+            unsorted_lists, speed_resolution
+            database, random_module)
 
 
 def make_websocket_app(sanic_app):

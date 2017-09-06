@@ -4,7 +4,6 @@ Fear and loathing.
 import ast
 import asyncio
 import logging
-import random
 import time
 
 from bogoapp import tools
@@ -22,26 +21,21 @@ class BogoManager:
     Manages all state related to bogosorting a sequence of lists.
     """
     def __init__(self,
-                 min_stop,
-                 max_stop,
-                 sort_limit,
+                 unsorted_lists,
                  speed_resolution,
                  database,
-                 seed):
+                 random_module):
         if speed_resolution <= 0:
             raise BogoError("Invalid speed resolution, "
                             "N shuffles per {} seconds doesn't make sense."
                             .format(speed_resolution))
-        self.current_bogo = None
-        self.random = random.Random()
-        self.random.seed(seed)
-        self.min_stop = min_stop
-        self.max_stop = max_stop
-        self.unsorted_lists = tools.unsorted_lists(
-                min_stop, max_stop, sort_limit)
+        self.unsorted_lists = unsorted_lists
         self.speed_resolution = speed_resolution
-        self.shuffling_speed = 0
         self.database = database
+        self.random = random_module
+
+        self.current_bogo = None
+        self.shuffling_speed = 0
         self.stopping = False
         self.task = None
 
@@ -119,12 +113,6 @@ class BogoManager:
         if previous_bogo and not previous_bogo.is_finished():
             logging.info("Found unfinished previous bogo.")
             unfinished_length = len(previous_bogo.sequence)
-            if unfinished_length > self.max_stop:
-                raise BogoError("Invalid BogoManager configuration, "
-                                "previous unfinished bogo sequence has "
-                                f"length {unfinished_length} "
-                                "while the list generator will generate lists "
-                                f"of maximum length {self.max_stop}.")
             self.unsorted_lists = tools.fast_forward_to_length(
                     self.unsorted_lists, unfinished_length)
             # Drop next list since it has the same length as the sequence in
