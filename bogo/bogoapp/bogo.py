@@ -65,9 +65,6 @@ class Bogo:
     def is_finished(self):
         return bool(self.finished or seqtools.is_sorted(self.sequence))
 
-    def __len__(self):
-        return len(self.sequence)
-
     def __repr__(self):
         return "<class 'Bogo' with sequence: {}>".format(repr(self.sequence))
 
