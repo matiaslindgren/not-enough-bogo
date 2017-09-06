@@ -37,7 +37,7 @@ class BogoManager:
         self.current_bogo = None
         self.shuffling_speed = 0
         self.stopping = False
-        self.task = None
+        self.asyncio_task = None
 
     async def load_previous_state(self):
         logging.info("Loading previous state.")

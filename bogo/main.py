@@ -37,13 +37,13 @@ async def source(request):
 
 @app.listener("before_server_start")
 async def begin_sort(app, loop):
-    bogo_manager.task = asyncio.ensure_future(bogo_manager.run())
+    bogo_manager.asyncio_task = asyncio.ensure_future(bogo_manager.run())
 
 @app.listener("after_server_stop")
 async def abort_sort(app, loop):
     """Graceful abort which saves the state correctly."""
     bogo_manager.stopping = True
-    await asyncio.wait([bogo_manager.task], loop=loop)
+    await asyncio.wait([bogo_manager.asyncio_task], loop=loop)
 
 
 if __name__ == "__main__":
