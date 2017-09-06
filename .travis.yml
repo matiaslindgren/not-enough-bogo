@@ -1,6 +1,8 @@
 language: python
 python:
   - "3.6"
+git:
+  depth: 1
 env:
   - HYPOTHESIS_PROFILE=ci
 install: "pip install -r requirements.txt"
