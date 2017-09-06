@@ -1,10 +1,12 @@
+from . import local_settings
 
-LOGO = None
+LOGO = getattr(local_settings, "LOGO", None)
 
-SQL_DRIVER_LIB = ""
-DATABASE_PATH = ""
+SQL_DRIVER_LIB = local_settings.SQL_DRIVER_LIB
+DATABASE_PATH = local_settings.DATABASE_PATH
+SQL_SCHEMA_PATH = local_settings.SQL_SCHEMA_PATH
+
 ODBC_DNS = f"Driver={SQL_DRIVER_LIB};Database={DATABASE_PATH}"
-SQL_SCHEMA_PATH = ""
 
 TEMPLATE_PATH="templates"
 

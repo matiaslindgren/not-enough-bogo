@@ -3,6 +3,8 @@
 __pycache__
 *.pyc
 
+local_settings.py
+
 *.db
 dump.rdb
 .hypothesis
