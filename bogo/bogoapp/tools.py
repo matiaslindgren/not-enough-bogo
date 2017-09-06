@@ -1,7 +1,17 @@
-"""
-Simple sequence helpers.
-"""
 import itertools
+import datetime
+
+from bogoapp import settings
+
+
+def datetime_isoformat(date):
+    return date.isoformat(timespec='milliseconds')
+
+def isoformat_now():
+    return datetime_isoformat(datetime.datetime.utcnow())
+
+def datetime_from_isoformat(date_string):
+    return datetime.datetime.strptime(date_string, settings.DATE_FORMAT)
 
 
 def is_sorted(seq):

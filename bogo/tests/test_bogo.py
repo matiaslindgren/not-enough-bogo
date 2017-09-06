@@ -6,7 +6,7 @@ from . import strategies
 from . import conftest
 
 from bogoapp import bogo
-from bogoapp import seqtools
+from bogoapp import tools
 
 
 class TestDateHelpers(unittest.TestCase):
@@ -14,8 +14,8 @@ class TestDateHelpers(unittest.TestCase):
     def test_now_string_is_recent(self):
         for _ in range(1000):
             now = datetime.datetime.utcnow()
-            now_string = bogo.isoformat_now()
-            now_from_string = bogo.datetime_from_isoformat(now_string)
+            now_string = tools.isoformat_now()
+            now_from_string = tools.datetime_from_isoformat(now_string)
 
             self.assertIsInstance(
                     now_from_string,
@@ -39,8 +39,8 @@ class TestBogo(unittest.TestCase):
         self.assertEqual(repr(bogo_obj.sequence), row[1])
         self.assertEqual(bogo_obj.created, row[2])
         self.assertEqual(bogo_obj.finished, row[3])
-        self.assertLess(bogo.datetime_from_isoformat(bogo_obj.created),
-                        bogo.datetime_from_isoformat(bogo_obj.finished))
+        self.assertLess(tools.datetime_from_isoformat(bogo_obj.created),
+                        tools.datetime_from_isoformat(bogo_obj.finished))
         self.assertEqual(bogo_obj.shuffles, row[4])
         self.assertGreaterEqual(bogo_obj.shuffles, 0)
 
@@ -67,7 +67,7 @@ class TestBogo(unittest.TestCase):
 
     @hypothesis.given(init_args=strategies.bogo_init_arg_tuples)
     def test_bogo_is_finished(self, init_args):
-        hypothesis.assume(not seqtools.is_sorted(init_args[1]))
+        hypothesis.assume(not tools.is_sorted(init_args[1]))
         bogo_obj = bogo.Bogo(*init_args)
         finished, bogo_obj.finished = bogo_obj.finished, None
         self.assertFalse(bogo_obj.is_finished())
