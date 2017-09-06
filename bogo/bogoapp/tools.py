@@ -5,7 +5,7 @@ from bogoapp import settings
 
 
 def datetime_isoformat(date):
-    return date.isoformat(timespec='milliseconds')
+    return date.isoformat(timespec=settings.TIMESPEC)
 
 def isoformat_now():
     return datetime_isoformat(datetime.datetime.utcnow())
