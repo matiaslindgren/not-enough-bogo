@@ -2,12 +2,6 @@
 sanic
 aioodbc
 
-# Frontend
-bokeh
-
 # Testing
 hypothesis
-
-# Utils
-python-dateutil
 

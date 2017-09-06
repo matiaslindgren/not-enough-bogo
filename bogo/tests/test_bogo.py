@@ -1,7 +1,9 @@
 import unittest
 import datetime
 import hypothesis
-import strategies
+
+from . import strategies
+from . import conftest
 
 from bogoapp import bogo
 from bogoapp import seqtools
@@ -54,7 +56,6 @@ class TestBogo(unittest.TestCase):
                       random=hypothesis.strategies.randoms())
     def test_bogo_shuffle(self, init_args, random):
         bogo_obj = bogo.Bogo(*init_args)
-        list_start = list(bogo_obj.sequence)
         shuffles_start = bogo_obj.shuffles
         random_state = random.getstate()
 
@@ -63,7 +64,6 @@ class TestBogo(unittest.TestCase):
         self.assertEqual(bogo_obj.shuffles - 1,
                          shuffles_start)
         self.assertNotEqual(repr(random.getstate()), repr(random_state))
-        self.assertNotEqual(list(bogo_obj.sequence), list_start)
 
     @hypothesis.given(init_args=strategies.bogo_init_arg_tuples)
     def test_bogo_is_finished(self, init_args):
