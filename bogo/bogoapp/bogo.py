@@ -9,13 +9,20 @@ import time
 import logging
 
 from bogoapp import seqtools
+from bogoapp import settings
 
 
 logger = logging.getLogger("BogoManager")
 
 
+def datetime_isoformat(date):
+    return date.isoformat(timespec='milliseconds')
+
 def isoformat_now():
-    return datetime.datetime.utcnow().isoformat(timespec='milliseconds')
+    return datetime_isoformat(datetime.datetime.utcnow())
+
+def datetime_from_isoformat(date_string):
+    return datetime.datetime.strptime(date_string, settings.DATE_FORMAT)
 
 
 class BogoError(Exception):
