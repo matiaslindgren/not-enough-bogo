@@ -1,5 +1,7 @@
 import datetime
 import hypothesis
+
+from tests import conftest
 from bogoapp import settings
 
 db_indexes = hypothesis.strategies.integers(

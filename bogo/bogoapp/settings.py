@@ -1,4 +1,4 @@
-from . import local_settings
+from bogoapp import local_settings
 
 LOGO = getattr(local_settings, "LOGO", None)
 
