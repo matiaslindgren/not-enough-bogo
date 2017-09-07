@@ -1,7 +1,22 @@
 import asyncio
 import unittest
+import unittest.mock as mock
 
+import hypothesis
 import uvloop
+
+from bogoapp.bogo_manager import BogoManager
+
+
+def AsyncMock(*args, **kwargs):
+    """https://blog.miguelgrinberg.com/post/unit-testing-asyncio-code"""
+    m = mock.MagicMock(*args, **kwargs)
+
+    async def mock_coro(*args, **kwargs):
+        return m(*args, **kwargs)
+
+    mock_coro.mock = m
+    return mock_coro
 
 
 class TestBogoManager(unittest.TestCase):

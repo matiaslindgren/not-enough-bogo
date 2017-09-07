@@ -11,6 +11,10 @@ db_indexes = hypothesis.strategies.integers(
 natural_numbers = hypothesis.strategies.integers(
         min_value=0)
 
+unsorted_list_cycle_lengths = hypothesis.strategies.integers(
+        min_value=conftest.LIST_CYCLE_MIN_LENGTH,
+        max_value=conftest.LIST_CYCLE_MAX_LENGTH)
+
 maximum_sequence_stop = hypothesis.strategies.integers(
         min_value=settings.MINIMUM_SEQUENCE_STOP,
         max_value=settings.MAXIMUM_SEQUENCE_STOP*100)
@@ -29,6 +33,12 @@ def isoformatted(dates):
 @hypothesis.strategies.composite
 def _unsorted_list(draw):
     sequence_stop = draw(maximum_sequence_stop)
+    return list(range(sequence_stop, 0 , -1))
+
+@hypothesis.strategies.composite
+def _unsorted_list_cycle(draw):
+    sequence_stop = draw(maximum_sequence_stop)
+    cycle_length = draw(unsorted_list_cycle_lengths)
     return list(range(sequence_stop, 0 , -1))
 
 @hypothesis.strategies.composite
@@ -52,6 +62,17 @@ def _bogo_init_args(draw):
             *isoformatted(draw(_datetime_and_later())),
             draw(natural_numbers))
 
+@hypothesis.strategies.composite
+def _bogo_manager_init_args(draw):
+    return (draw(_unsorted_list()),
+            draw(_unsorted_list()),
+            *isoformatted(draw(_datetime_and_later())),
+            draw(natural_numbers))
+
+
+
+
+
 database_bogo_rows = _database_bogo_row()
 bogo_init_arg_tuples = _bogo_init_args()
-
+unsorted_list_cycles = _unsorted_list_cycle()
