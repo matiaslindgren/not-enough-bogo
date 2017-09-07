@@ -1,7 +1,4 @@
-try:
-    import local_settings
-except ImportError:
-    from bogoapp import local_settings
+from bogoapp import local_settings
 
 LOGO = getattr(local_settings, "LOGO", None)
 
