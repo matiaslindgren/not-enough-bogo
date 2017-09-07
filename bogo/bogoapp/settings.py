@@ -1,7 +1,7 @@
 try:
     from bogoapp import local_settings
 except ImportError:
-    local_settings = object()
+    local_settings = None
 
 LOGO = getattr(local_settings, "LOGO", None)
 

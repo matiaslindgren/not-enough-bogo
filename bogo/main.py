@@ -7,7 +7,7 @@ import sanic
 from bogoapp import util
 
 
-logging_format = ("[%(asctime)s] %(process)d-%(levelname)s "
+logging_format = ("%(asctime)s %(process)d-%(levelname)s "
                   "%(module)s::%(funcName)s():l%(lineno)d: "
                   "%(message)s")
 logging.basicConfig(format=logging_format, level=logging.DEBUG)

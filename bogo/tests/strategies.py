@@ -3,6 +3,7 @@ import hypothesis
 
 from tests import conftest
 from bogoapp import settings
+from bogoapp import tools
 
 db_indexes = hypothesis.strategies.integers(
         min_value=1,
@@ -39,7 +40,7 @@ def _unsorted_list(draw):
 def _unsorted_list_cycle(draw):
     sequence_stop = draw(maximum_sequence_stop)
     cycle_length = draw(unsorted_list_cycle_lengths)
-    return list(range(sequence_stop, 0 , -1))
+    return tools.unsorted_lists(0, sequence_stop, cycle_length)
 
 @hypothesis.strategies.composite
 def _datetime_and_later(draw):
@@ -62,17 +63,7 @@ def _bogo_init_args(draw):
             *isoformatted(draw(_datetime_and_later())),
             draw(natural_numbers))
 
-@hypothesis.strategies.composite
-def _bogo_manager_init_args(draw):
-    return (draw(_unsorted_list()),
-            draw(_unsorted_list()),
-            *isoformatted(draw(_datetime_and_later())),
-            draw(natural_numbers))
-
-
-
-
-
 database_bogo_rows = _database_bogo_row()
 bogo_init_arg_tuples = _bogo_init_args()
 unsorted_list_cycles = _unsorted_list_cycle()
+
