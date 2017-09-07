@@ -9,4 +9,4 @@ install: "pip install -r requirements.txt"
 script:
   - "cd bogo"
   - "python3.6 -m doctest --verbose bogoapp/tools.py"
-  - "python3.6 -m unittest discover --verbose --start-directory tests"
+  - "python3.6 -m unittest discover --verbose --top-level-directory . --start-directory tests"

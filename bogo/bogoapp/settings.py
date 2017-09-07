@@ -1,10 +1,13 @@
-from bogoapp import local_settings
+try:
+    from bogoapp import local_settings
+except ImportError:
+    pass # probably running ci tests
 
 LOGO = getattr(local_settings, "LOGO", None)
 
-SQL_DRIVER_LIB = local_settings.SQL_DRIVER_LIB
-DATABASE_PATH = local_settings.DATABASE_PATH
-SQL_SCHEMA_PATH = local_settings.SQL_SCHEMA_PATH
+SQL_DRIVER_LIB = getattr(local_settings, "SQL_DRIVER_LIB", None)
+DATABASE_PATH = getattr(local_settings, "DATABASE_PATH", None)
+SQL_SCHEMA_PATH = getattr(local_settings, "SQL_SCHEMA_PATH", None)
 
 ODBC_DNS = f"Driver={SQL_DRIVER_LIB};Database={DATABASE_PATH}"
 
