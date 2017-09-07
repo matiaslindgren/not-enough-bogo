@@ -1,7 +1,7 @@
 try:
     from bogoapp import local_settings
 except ImportError:
-    pass # probably running ci tests
+    local_settings = object()
 
 LOGO = getattr(local_settings, "LOGO", None)
 
