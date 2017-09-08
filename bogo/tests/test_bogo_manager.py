@@ -1,24 +1,14 @@
+import ast
 import asyncio
 import unittest
-import unittest.mock as mock
 
 import hypothesis
 import uvloop
 
 from . import strategies
 
+from bogoapp.bogo import Bogo
 from bogoapp.bogo_manager import BogoManager, BogoError
-
-
-def AsyncMock(*args, **kwargs):
-    """https://blog.miguelgrinberg.com/post/unit-testing-asyncio-code"""
-    m = mock.MagicMock(*args, **kwargs)
-
-    async def mock_coro(*args, **kwargs):
-        return m(*args, **kwargs)
-
-    mock_coro.mock = m
-    return mock_coro
 
 
 class TestBogoManager(unittest.TestCase):
@@ -38,45 +28,83 @@ class TestBogoManager(unittest.TestCase):
                         .format(repr(f)))
         return self.loop.run_until_complete(f())
 
-    # TODO move this monster to custom strategies as a BogoManager strategy
-    @hypothesis.settings(max_examples=100)
-    @hypothesis.given(bogo_row=strategies.database_bogo_rows,
-                      unsorted_list_cycle=strategies.unsorted_list_cycles,
-                      speed_resolution=hypothesis.strategies.integers(min_value=1),
-                      mock_database=hypothesis.strategies.builds(mock.MagicMock),
-                      random_module=hypothesis.strategies.randoms(),
-                      async_mock=hypothesis.strategies.builds(AsyncMock))
-    def test_load_previous_state(self,
-                                 bogo_row,
-                                 unsorted_list_cycle,
-                                 speed_resolution,
-                                 mock_database,
-                                 random_module,
-                                 async_mock):
-        async def load_previous_state():
-            return await self.bogo_manager.load_previous_state()
-        self.bogo_manager = BogoManager(unsorted_list_cycle,
-                                        speed_resolution,
-                                        mock_database,
-                                        random_module)
-        async_mock.mock.return_value = None
-        self.bogo_manager.database.newest_bogo = async_mock
-        newest_bogo = self._run(load_previous_state)
+    @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
+                      newest_bogo_mock=strategies.async_mocks)
+    def test_load_previous_state_empty_db(self, init_args, newest_bogo_mock):
+        self.bogo_manager = BogoManager(*init_args)
+        newest_bogo_mock.mock.return_value = None
+        self.bogo_manager.database.newest_bogo = newest_bogo_mock
+        newest_bogo = self._run(self.bogo_manager.load_previous_state)
         self.assertIsNone(newest_bogo,
                           "Without a bogo in the database, load_previous_state should "
                           "return None, not {}."
                           .format(repr(newest_bogo)))
 
-        async_mock.mock.return_value = bogo_row
-        self.bogo_manager.database.newest_random_state = async_mock
+    @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
+                      bogo_row=strategies.database_bogo_rows,
+                      newest_bogo_mock=strategies.async_mocks,
+                      newest_random_mock=strategies.async_mocks)
+    def test_load_previous_state_bogo_but_no_random(
+            self, init_args, bogo_row, newest_bogo_mock, newest_random_mock):
+        self.bogo_manager = BogoManager(*init_args)
+        newest_bogo_mock.mock.return_value = bogo_row
+        self.bogo_manager.database.newest_bogo = newest_bogo_mock
+        newest_random_mock.mock.return_value = None
+        self.bogo_manager.database.newest_random_state = newest_random_mock
         with self.assertRaises(BogoError, msg="If the database contains a bogo "
                                               "but no previous random state, "
                                               "it should be an error."):
-            newest_bogo = self._run(load_previous_state)
+            self._run(self.bogo_manager.load_previous_state)
 
-        # TODO bogo id and random state id not equal
-        # TODO random module state is set
-        # TODO bogo is returned
+    @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
+                      bogo_row=strategies.database_bogo_rows,
+                      random_row=strategies.database_random_state_rows,
+                      newest_bogo_mock=strategies.async_mocks,
+                      newest_random_mock=strategies.async_mocks)
+    def test_load_previous_state_bogo_foreign_key_mismatch(
+            self, init_args, bogo_row, random_row, newest_bogo_mock, newest_random_mock):
+        hypothesis.assume(bogo_row[0] != random_row[3])
+        self.bogo_manager = BogoManager(*init_args)
+        newest_bogo_mock.mock.return_value = bogo_row
+        self.bogo_manager.database.newest_bogo = newest_bogo_mock
+        newest_random_mock.mock.return_value = random_row
+        self.bogo_manager.database.newest_random_state = newest_random_mock
+        with self.assertRaises(BogoError, msg="The newest random state should "
+                                              "always contain a reference to "
+                                              "the newest bogo."):
+            self._run(self.bogo_manager.load_previous_state)
+
+    @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
+                      bogo_row=strategies.database_bogo_rows,
+                      random_row=strategies.database_random_state_rows,
+                      newest_bogo_mock=strategies.async_mocks,
+                      newest_random_mock=strategies.async_mocks)
+    def test_load_previous_state_successful(
+            self, init_args, bogo_row, random_row, newest_bogo_mock, newest_random_mock):
+        hypothesis.assume(random_row[3] == bogo_row[0])
+        random_module_state = ast.literal_eval(random_row[1])
+        self.bogo_manager = BogoManager(*init_args)
+        newest_bogo_mock.mock.return_value = bogo_row
+        self.bogo_manager.database.newest_bogo = newest_bogo_mock
+        newest_random_mock.mock.return_value = random_row
+        self.bogo_manager.database.newest_random_state = newest_random_mock
+        newest_bogo = self._run(self.bogo_manager.load_previous_state)
+        self.assertIsInstance(newest_bogo, Bogo, "load_previous_state should build "
+                                                 "a Bogo instance when state loading "
+                                                 "is successful.")
+        msg = "load_previous_state returned an incorrectly initialized Bogo instance."
+        self.assertEqual(newest_bogo.db_id, bogo_row[0], msg)
+        self.assertEqual(newest_bogo.sequence, ast.literal_eval(bogo_row[1]), msg)
+        self.assertEqual(newest_bogo.created, bogo_row[2], msg)
+        self.assertEqual(newest_bogo.finished, bogo_row[3], msg)
+        self.assertEqual(newest_bogo.shuffles, bogo_row[4], msg)
+        self.assertEqual(repr(self.bogo_manager.random.getstate()),
+                         random_module_state,
+                         "load_previous_state should initialize the state "
+                         "of the random module from the retrieved random state "
+                         "database row.")
+
+
 
     def test_save_state(self):
         pass

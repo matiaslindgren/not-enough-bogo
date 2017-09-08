@@ -1,9 +1,20 @@
 import datetime
 import hypothesis
+from unittest.mock import MagicMock
 
 from tests import conftest
 from bogoapp import settings
 from bogoapp import tools
+
+def AsyncMock(*args, **kwargs):
+    """https://blog.miguelgrinberg.com/post/unit-testing-asyncio-code"""
+    m = MagicMock(*args, **kwargs)
+
+    async def mock_coro(*args, **kwargs):
+        return m(*args, **kwargs)
+
+    mock_coro.mock = m
+    return mock_coro
 
 db_indexes = hypothesis.strategies.integers(
         min_value=1,
@@ -28,6 +39,9 @@ timedeltas = hypothesis.strategies.timedeltas(
         min_value=datetime.timedelta(**{settings.TIMESPEC: 1}),
         max_value=datetime.timedelta(days=4000*365))
 
+async_mocks = hypothesis.strategies.builds(
+        AsyncMock)
+
 def isoformatted(dates):
     return tuple(d.isoformat(timespec=settings.TIMESPEC) for d in dates)
 
@@ -50,11 +64,17 @@ def _datetime_and_later(draw):
 
 @hypothesis.strategies.composite
 def _database_bogo_row(draw):
-    db_id = draw(db_indexes)
-    unsorted_list_string = repr(draw(_unsorted_list()))
-    created, finished = isoformatted(draw(_datetime_and_later()))
-    shuffles = draw(natural_numbers)
-    return db_id, unsorted_list_string, created, finished, shuffles
+    return (draw(db_indexes),
+            repr(draw(_unsorted_list())),
+            *isoformatted(draw(_datetime_and_later())),
+            draw(natural_numbers))
+
+@hypothesis.strategies.composite
+def _database_random_state_row(draw):
+    return (draw(db_indexes),
+            repr(draw(_unsorted_list())),
+            draw(datetimes),
+            draw(db_indexes))
 
 @hypothesis.strategies.composite
 def _bogo_init_args(draw):
@@ -63,7 +83,17 @@ def _bogo_init_args(draw):
             *isoformatted(draw(_datetime_and_later())),
             draw(natural_numbers))
 
-database_bogo_rows = _database_bogo_row()
-bogo_init_arg_tuples = _bogo_init_args()
+@hypothesis.strategies.composite
+def _bogo_manager_init_args(draw):
+    return (draw(_unsorted_list_cycle()),
+            draw(hypothesis.strategies.integers(min_value=1)),
+            draw(hypothesis.strategies.builds(MagicMock)),
+            draw(hypothesis.strategies.randoms()))
+
+
 unsorted_list_cycles = _unsorted_list_cycle()
+database_bogo_rows = _database_bogo_row()
+database_random_state_rows = _database_random_state_row()
+bogo_init_arg_tuples = _bogo_init_args()
+bogo_manager_init_arg_tuples = _bogo_manager_init_args()
 
