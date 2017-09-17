@@ -11,9 +11,9 @@ SQL_SCHEMA_PATH = getattr(local_settings, "SQL_SCHEMA_PATH", None)
 
 ODBC_DNS = f"Driver={SQL_DRIVER_LIB};Database={DATABASE_PATH}"
 
-TEMPLATE_PATH="templates"
+TEMPLATE_PATH = "static/templates"
 
-RANDOM_SEED=1
+RANDOM_SEED = 1
 MINIMUM_SEQUENCE_STOP = 5
 MAXIMUM_SEQUENCE_STOP = 15
 

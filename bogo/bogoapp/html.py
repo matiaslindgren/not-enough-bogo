@@ -7,11 +7,12 @@ logger = logging.getLogger("JinjaWrapper")
 
 class JinjaWrapper:
 
-    def __init__(self):
-        self.env = jinja2.Environment(
-            loader=jinja2.PackageLoader("bogoapp", "templates"),
-            enable_async=True
-        )
+    def __init__(self, template_path=None):
+        if template_path is None:
+            loader = jinja2.PackageLoader("bogoapp", "templates")
+        else:
+            loader = jinja2.FileSystemLoader(template_path)
+        self.env = jinja2.Environment(loader=loader, enable_async=True)
 
     async def render(self, template_name, context):
         if context is None:

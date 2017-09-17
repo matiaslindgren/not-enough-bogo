@@ -20,7 +20,7 @@ logger = logging.getLogger("WebSocketManager")
 def make_sanic(name):
     app = sanic.Sanic(name)
     app.config["LOGO"] = settings.LOGO
-    app.static("main.js", "./main.js")
+    app.static("/static", "./static")
     return app
 
 
@@ -68,7 +68,8 @@ def make_websocket_app(sanic_app):
 
 
 def make_jinja_app():
-    return html.JinjaWrapper()
+    logger.debug("Create template rendering app")
+    return html.JinjaWrapper(settings.TEMPLATE_PATH)
 
 
 
