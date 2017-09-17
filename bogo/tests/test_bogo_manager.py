@@ -98,12 +98,11 @@ class TestBogoManager(unittest.TestCase):
         self.assertEqual(newest_bogo.created, bogo_row[2], msg)
         self.assertEqual(newest_bogo.finished, bogo_row[3], msg)
         self.assertEqual(newest_bogo.shuffles, bogo_row[4], msg)
-        self.assertEqual(repr(self.bogo_manager.random.getstate()),
+        self.assertEqual(self.bogo_manager.random.getstate(),
                          random_module_state,
                          "load_previous_state should initialize the state "
                          "of the random module from the retrieved random state "
                          "database row.")
-
 
 
     def test_save_state(self):

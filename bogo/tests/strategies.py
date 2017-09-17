@@ -72,7 +72,7 @@ def _database_bogo_row(draw):
 @hypothesis.strategies.composite
 def _database_random_state_row(draw):
     return (draw(db_indexes),
-            repr(draw(_unsorted_list())),
+            repr(draw(hypothesis.strategies.randoms()).getstate()),
             draw(datetimes),
             draw(db_indexes))
 
