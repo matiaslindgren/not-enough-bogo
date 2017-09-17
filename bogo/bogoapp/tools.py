@@ -8,6 +8,10 @@ def datetime_isoformat(date):
     return date.isoformat(timespec=settings.TIMESPEC)
 
 def isoformat_now():
+    """
+    >>> isinstance(isoformat_now(), str)
+    True
+    """
     return datetime_isoformat(datetime.datetime.utcnow())
 
 def datetime_from_isoformat(date_string):
