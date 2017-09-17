@@ -80,7 +80,7 @@ class BogoManager:
         delta_iterations = 0
         delta_seconds = 0.0
         while not (self.current_bogo.is_finished() or self.stopping):
-            await asyncio.sleep(0)
+            await asyncio.sleep(1e-100)
             perf_counter_start = time.perf_counter()
             self.current_bogo.shuffle_with(self.random.shuffle)
             delta_iterations += 1
