@@ -36,7 +36,7 @@ class Bogo:
         self.shuffles += 1
 
     def is_finished(self):
-        return bool(self.finished or tools.is_sorted(self.sequence))
+        return self.finished is not None or tools.is_sorted(self.sequence)
 
     def __repr__(self):
         return "<class 'Bogo' with sequence: {}>".format(repr(self.sequence))
