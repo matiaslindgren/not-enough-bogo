@@ -107,10 +107,12 @@ class Database:
         rand_state = await self.query_and_get_first(select_with_foreign_key, (bogo_id, ))
         return rand_state is not None
 
-    async def exists(self, bogo):
+    async def bogo_by_id(self, bogo_id):
         select_with_id = "select * from bogos where id=?"
-        bogo = await self.query_and_get_first(select_with_id, (bogo.db_id, ))
-        return bogo is not None
+        return await self.query_and_get_first(select_with_id, (bogo_id, ))
+
+    async def exists(self, bogo):
+        return (await self.bogo_by_id(bogo.db_id)) is not None
 
     async def newest_bogo(self):
         select_newest = "select * from bogos order by created desc limit 1"
