@@ -22,7 +22,7 @@ def make_sanic(name):
     return app
 
 
-def make_bogo_manager():
+def make_bogo_manager(database_app):
     logger.debug("Create BogoManager instance")
     min_stop = settings.MINIMUM_SEQUENCE_STOP
     max_stop = settings.MAXIMUM_SEQUENCE_STOP
@@ -31,7 +31,8 @@ def make_bogo_manager():
     speed_resolution = getattr(settings, "SPEED_RESOLUTION", 1)
     random_module = random.Random()
     random_module.seed(settings.RANDOM_SEED)
-    return bogo_manager.BogoManager(unsorted_lists, speed_resolution, random_module)
+    return bogo_manager.BogoManager(unsorted_lists, speed_resolution,
+                                    database_app, random_module)
 
 
 def make_database_manager():
