@@ -14,10 +14,14 @@ logging.basicConfig(format=logging_format, level=logging.DEBUG)
 
 # Globals
 logger = logging.getLogger(__name__)
+logger.debug("Creating globals")
+
 app = util.make_sanic(__name__)
 ws_app = util.make_websocket_app(app)
 jinja_app = util.make_jinja_app()
 bogo_manager = util.make_bogo_manager()
+
+logger.debug("Created all globals")
 
 
 async def template_response(name, context=None):
@@ -31,19 +35,18 @@ async def index(request):
 async def about(request):
     return await template_response("about.html")
 
-@app.route("/source")
-async def source(request):
-    return await template_response("source.html")
-
 @app.listener("before_server_start")
 async def begin_sort(app, loop):
+    logging.info("Starting sort")
     bogo_manager.asyncio_task = asyncio.ensure_future(bogo_manager.run())
 
 @app.listener("after_server_stop")
 async def abort_sort(app, loop):
     """Graceful abort which saves the state correctly."""
+    logging.info("Stopping sort")
     bogo_manager.stopping = True
     await asyncio.wait([bogo_manager.asyncio_task], loop=loop)
+    logging.info("Sorting stopped")
 
 
 if __name__ == "__main__":
@@ -51,3 +54,5 @@ if __name__ == "__main__":
         print("This app requires Python 3.6 or newer.", file=sys.stderr)
         sys.exit(1)
     app.run()
+    logging.info("Exiting app")
+

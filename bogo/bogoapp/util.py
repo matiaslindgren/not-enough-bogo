@@ -1,23 +1,21 @@
-import json
 import random
 import os.path
 import logging
 
 import sanic
-import websockets
 
 
 from bogoapp import bogo_manager
-from bogoapp import tools
-from bogoapp import settings
 from bogoapp import db
 from bogoapp import html
+from bogoapp import settings
+from bogoapp import tools
+from bogoapp import ws
 
-
-logger = logging.getLogger("WebSocketManager")
-
+logger = logging.getLogger("util")
 
 def make_sanic(name):
+    logger.debug("Create Sanic app %s", name)
     app = sanic.Sanic(name)
     app.config["LOGO"] = settings.LOGO
     app.static("/static", "./static")
@@ -25,6 +23,7 @@ def make_sanic(name):
 
 
 def make_bogo_manager():
+    logger.debug("Create BogoManager instance")
     min_stop = settings.MINIMUM_SEQUENCE_STOP
     max_stop = settings.MAXIMUM_SEQUENCE_STOP
     sort_limit = getattr(settings, "SORT_LIMIT", 0)
@@ -39,7 +38,10 @@ def make_bogo_manager():
     schema = settings.SQL_SCHEMA_PATH
     database = db.Database(dns, schema)
     if not os.path.exists(settings.DATABASE_PATH):
+        logger.debug("No database found")
         database.init()
+    else:
+        logger.debug("Found existing database")
 
     return bogo_manager.BogoManager(
             unsorted_lists, speed_resolution,
@@ -47,24 +49,11 @@ def make_bogo_manager():
 
 
 def make_websocket_app(sanic_app):
-
-    class WebSocketManager:
-
-        def __init__(self):
-            self.spectators = 0
-
-        @sanic_app.websocket("/feed")
-        async def feed(self, request, ws):
-            logger.info("init ws feed")
-            self.spectators += 1
-            try:
-                while True:
-                    await ws.send(json.dumps([self.spectators]))
-                    await ws.recv()
-            except websockets.exceptions.ConnectionClosed:
-                self.spectators = max(0, self.spectators-1)
-
-    return WebSocketManager()
+    logger.debug("Create websockets manager")
+    ws_manager = ws.WebSocketManager()
+    logger.debug("Attach websocket url for sanic app %s", sanic_app.name)
+    ws_manager.feed = sanic_app.websocket("/feed", ws_manager.feed)
+    return ws_manager
 
 
 def make_jinja_app():
