@@ -10,10 +10,8 @@
       <meta name="description" content="">
       <meta name="viewport" content="width=device-width, initial-scale=1">
 
-      <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}"> -->
-      <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"> -->
-
-      {# TODO would it be a massive pain in the ass to minify the source of EVERYTHING using the google closure compiler...? #}
+      <link rel="stylesheet" href="static/css/bootstrap.min.css">
+      <link rel="stylesheet" href="static/css/main.css">
 
       {% block head_includes %}
       {% endblock %}
@@ -24,26 +22,20 @@
           <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
       <![endif]-->
 
-      <!-- <nav class="navbar navbar-default"> -->
-      <!--   <div class="container"> -->
-      <!--        <a class="col-xs-2 col-xs-offset-1" -->
-      <!--           href="{{ url_for('about') }}" -->
-      <!--           style="text-align: right;">WTF?</a> -->
-      <!--        <a class="col-xs-2" -->
-      <!--           href="{{ url_for('eternal_sort') }}" -->
-      <!--           style="text-align: right;">Please, more.</a> -->
-      <!--        <a class="col-xs-2" -->
-      <!--           href="{{ url_for('index') }}" -->
-      <!--           style="text-align: center;"> -->
-      <!--          <span class="glyphicon glyphicon-home" aria-hidden="true"></span></a> -->
-      <!--        <a class="col-xs-2" -->
-      <!--           href="{{ url_for('statistics') }}" -->
-      <!--           style="text-align: left;">Statistics</a> -->
-      <!--        <a class="col-xs-2" -->
-      <!--           href="https://github.com/matiaslindgren/not-enough-bogo" -->
-      <!--           style="text-align: left;">Source</a> -->
-      <!--   </div> -->
-      <!-- </nav> -->
+      <nav class="navbar navbar-default">
+        <div class="container">
+             <a class="col-xs-2 col-xs-offset-1"
+                href="/about"
+                style="text-align: right;">WTF?</a>
+             <a class="col-xs-2"
+                href="/"
+                style="text-align: center;">
+               <span class="glyphicon glyphicon-home" aria-hidden="true"></span></a>
+             <a class="col-xs-2"
+                href="https://github.com/matiaslindgren/not-enough-bogo"
+                style="text-align: left;">Source</a>
+        </div>
+      </nav>
 
       {% block body_content %}
       <b>The body_content block was not overridden</b>
@@ -51,7 +43,6 @@
       <p>Most interesting, it seems that some unknown peculiarities are taking place at the server side.</p>
       {% endblock %}
 
-      <!-- <script src="{{ url_for('static', filename='js/plugins.js') }}"></script> -->
 
   </body>
 </html>
