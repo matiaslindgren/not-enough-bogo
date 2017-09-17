@@ -131,5 +131,6 @@ class Database:
         return await self.query_and_get_first(select_previous, (bogo['created'], ))
 
     async def adjacent_bogos(self, bogo):
-        return await (self.older_bogo(bogo), self.newer_bogo(bogo))
+        return (await self.older_bogo(bogo),
+                await self.newer_bogo(bogo))
 
