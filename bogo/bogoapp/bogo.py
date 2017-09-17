@@ -31,6 +31,13 @@ class Bogo:
                 self.finished,
                 self.shuffles)
 
+    def as_dict(self):
+        return {"id": self.db_id,
+                "seq": self.sequence,
+                "created": self.created,
+                "finished": self.finished,
+                "shuffles": self.shuffles}
+
     def shuffle_with(self, shuffle):
         shuffle(self.sequence)
         self.shuffles += 1

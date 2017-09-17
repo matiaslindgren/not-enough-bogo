@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 logger.debug("Creating globals")
 
 app = util.make_sanic(__name__)
-ws_app = util.make_websocket_app(app)
-jinja_app = util.make_jinja_app()
 bogo_manager = util.make_bogo_manager()
+db_app = util.make_database_manager()
+ws_app = util.make_websocket_app(app, bogo_manager.get_current_state)
+jinja_app = util.make_jinja_app()
 
 logger.debug("Created all globals")
 

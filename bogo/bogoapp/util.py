@@ -28,12 +28,14 @@ def make_bogo_manager():
     max_stop = settings.MAXIMUM_SEQUENCE_STOP
     sort_limit = getattr(settings, "SORT_LIMIT", 0)
     unsorted_lists = tools.unsorted_lists(min_stop, max_stop, sort_limit)
-
     speed_resolution = getattr(settings, "SPEED_RESOLUTION", 1)
-
     random_module = random.Random()
     random_module.seed(settings.RANDOM_SEED)
+    return bogo_manager.BogoManager(unsorted_lists, speed_resolution, random_module)
 
+
+def make_database_manager():
+    logger.debug("Create database manager")
     dns = settings.ODBC_DNS
     schema = settings.SQL_SCHEMA_PATH
     database = db.Database(dns, schema)
@@ -42,10 +44,7 @@ def make_bogo_manager():
         database.init()
     else:
         logger.debug("Found existing database")
-
-    return bogo_manager.BogoManager(
-            unsorted_lists, speed_resolution,
-            database, random_module)
+    return database
 
 
 def make_websocket_app(sanic_app):
