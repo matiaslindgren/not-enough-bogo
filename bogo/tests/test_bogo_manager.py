@@ -115,22 +115,6 @@ class TestBogoManager(unittest.TestCase):
                          "database row.")
 
 
-    def test_save_state(self):
-        pass
-
-    def test_make_next_bogo(self):
-        pass
-
-    def test_sort_current_until_done(self):
-        pass
-
-    def test_sort_all(self):
-        pass
-
-    def test_run(self):
-        pass
-
-
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 
