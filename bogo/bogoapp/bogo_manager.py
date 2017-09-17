@@ -35,7 +35,6 @@ class BogoManager:
         self.random = random_module
 
         self.current_bogo = None
-        self.shuffling_speed = 0
         self.stopping = False
         self.asyncio_task = None
 
@@ -86,7 +85,6 @@ class BogoManager:
             delta_iterations += 1
             delta_seconds += time.perf_counter() - perf_counter_start
             if delta_seconds >= self.speed_resolution:
-                self.shuffling_speed = round(delta_iterations/self.speed_resolution)
                 delta_iterations = 0
                 delta_seconds = 0.0
         logging.debug("Stopped sorting bogo.")
@@ -125,10 +123,6 @@ class BogoManager:
         await self.sort_all()
 
     def get_current_state(self):
-        return {"sequence":        self.current_bogo.sequence,
-                "shuffles":        self.current_bogo.shuffles,
-                "created":         self.current_bogo.created,
-                "finished":        self.current_bogo.finished,
-                "shuffling_speed": self.shuffling_speed}
-
+        return (self.current_bogo.shuffles,
+                self.current_bogo.is_finished())
 
