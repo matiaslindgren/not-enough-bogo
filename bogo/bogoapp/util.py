@@ -42,7 +42,7 @@ def make_bogo_manager():
         database.init()
 
     return bogo_manager.BogoManager(
-            unsorted_lists, speed_resolution
+            unsorted_lists, speed_resolution,
             database, random_module)
 
 
