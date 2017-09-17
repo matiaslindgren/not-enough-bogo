@@ -6,18 +6,19 @@ logger = logging.getLogger("WebSocketManager")
 
 class WebSocketManager:
 
-    def __init__(self):
+    def __init__(self, get_current_state):
         self.spectators = 0
+        self.get_current_state = get_current_state
 
     async def feed(self, request, ws):
         logger.debug("Open feed")
         self.spectators += 1
         try:
             while True:
-                await ws.send(json.dumps([self.spectators]))
+                data = json.dumps((self.spectators, *self.get_current_state()))
+                await ws.send(data)
                 await ws.recv()
         except websockets.exceptions.ConnectionClosed:
             self.spectators = max(0, self.spectators-1)
-            raise
         finally:
             logger.debug("Close feed")

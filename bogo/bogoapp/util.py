@@ -48,11 +48,11 @@ def make_database_manager():
     return database
 
 
-def make_websocket_app(sanic_app):
+def make_websocket_app(sanic_app, get_current_state):
     logger.debug("Create websockets manager")
-    ws_manager = ws.WebSocketManager()
-    logger.debug("Attach websocket url for sanic app %s", sanic_app.name)
-    ws_manager.feed = sanic_app.websocket("/feed", ws_manager.feed)
+    ws_manager = ws.WebSocketManager(get_current_state)
+    logger.debug("Attach websocket route for sanic app %s", sanic_app.name)
+    sanic_app.add_websocket_route(ws_manager.feed, "/feed")
     return ws_manager
 
 
