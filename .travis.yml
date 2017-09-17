@@ -10,3 +10,7 @@ script:
   - "cd bogo"
   - "python3.6 -m doctest --verbose bogoapp/tools.py"
   - "python3.6 -m unittest discover --verbose --top-level-directory . --start-directory tests"
+notifications:
+  slack:
+    secure: uWpzHbGfvA5HjwFlAIrAFzme/acY10jpKuhh8Iy6xCQgKGdOSehvRwA0LLlanXZnRzfaUxTpP28yosxvuTVX3YiZN5UXvhUE0Vx2ip1AiOCKT8eYDIZ2C0bhVrAjsEe68vRy2SJrPSArJki/916LCGABm/JFxG8fET46qia2DutGGyAIYMsvkVN+gxlQ6dLOOgUA8/3594EYwQdC6RHn1qO0LbF2GTt8gyJ0cmOUcl33Y1PDbFRDvvsRUrbFN6ZPh67PjjwHCZCpnet+E00sCMVU3tsNaLVpBKndk8bXApZmZjcc22/mmLxsPe/QAEBS6tMDMn0Uc+9eMzNqDIxENr18hTHp2g7P6Hb2R8fzphCXLx/62vqbmy129aK6Hws4ktMsWZgbUU+HwEmQMb1HAIqYTJOCvIiaRK9itCgApubNbP+fTdGmrLVBIj1sUKebNuHPUC9NWD1Ngt7JaroPr0/IgvT/tsASmzo6pVm3bpnGp7cwPyEfDPKNUjDHUWqTFj0xiqy2+rw+oiAW0g0avMf+yM42X1oRfBnZqBHvFO/J1P1P1OprgDoGZ1U+V0s4J+WUf7Z8zrIC+mt/n0snJoBpUaVODu7RjR4iVDk5WE5wRwBUekmfxa9lNUVsVoPm9cvuDP+KPjhasMJALmAPnkP3sR5aslJ0ZaakrDaT4Is=
+
