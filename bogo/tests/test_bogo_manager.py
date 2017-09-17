@@ -13,8 +13,6 @@ from bogoapp.bogo_manager import BogoManager, BogoError
 
 class TestBogoManager(unittest.TestCase):
 
-    timeout = 5
-
     def setUp(self):
         self.loop = uvloop.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -22,7 +20,7 @@ class TestBogoManager(unittest.TestCase):
     def tearDown(self):
         self.loop.close()
 
-    def _run(self, f):
+    def _run_in_loop(self, f):
         self.assertTrue(asyncio.iscoroutinefunction(f),
                         "Expected a coroutine function but instead got {}"
                         .format(repr(f)))
@@ -34,7 +32,7 @@ class TestBogoManager(unittest.TestCase):
         self.bogo_manager = BogoManager(*init_args)
         newest_bogo_mock.mock.return_value = None
         self.bogo_manager.database.newest_bogo = newest_bogo_mock
-        newest_bogo = self._run(self.bogo_manager.load_previous_state)
+        newest_bogo = self._run_in_loop(self.bogo_manager.load_previous_state)
         self.assertIsNone(newest_bogo,
                           "Without a bogo in the database, load_previous_state should "
                           "return None, not {}."
@@ -54,7 +52,7 @@ class TestBogoManager(unittest.TestCase):
         with self.assertRaises(BogoError, msg="If the database contains a bogo "
                                               "but no previous random state, "
                                               "it should be an error."):
-            self._run(self.bogo_manager.load_previous_state)
+            self._run_in_loop(self.bogo_manager.load_previous_state)
 
     @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
                       bogo_row=strategies.database_bogo_rows,
@@ -72,7 +70,7 @@ class TestBogoManager(unittest.TestCase):
         with self.assertRaises(BogoError, msg="The newest random state should "
                                               "always contain a reference to "
                                               "the newest bogo."):
-            self._run(self.bogo_manager.load_previous_state)
+            self._run_in_loop(self.bogo_manager.load_previous_state)
 
     @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
                       bogo_row=strategies.database_bogo_rows,
@@ -88,7 +86,7 @@ class TestBogoManager(unittest.TestCase):
         self.bogo_manager.database.newest_bogo = newest_bogo_mock
         newest_random_mock.mock.return_value = random_row
         self.bogo_manager.database.newest_random_state = newest_random_mock
-        newest_bogo = self._run(self.bogo_manager.load_previous_state)
+        newest_bogo = self._run_in_loop(self.bogo_manager.load_previous_state)
         self.assertIsInstance(newest_bogo, Bogo, "load_previous_state should build "
                                                  "a Bogo instance when state loading "
                                                  "is successful.")
