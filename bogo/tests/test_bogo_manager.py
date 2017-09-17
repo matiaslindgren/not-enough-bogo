@@ -29,6 +29,9 @@ class TestBogoManager(unittest.TestCase):
     @hypothesis.given(init_args=strategies.bogo_manager_init_arg_tuples,
                       newest_bogo_mock=strategies.async_mocks)
     def test_load_previous_state_empty_db(self, init_args, newest_bogo_mock):
+        """
+        Loading the newest state from an empty database fails silently.
+        """
         self.bogo_manager = BogoManager(*init_args)
         newest_bogo_mock.mock.return_value = None
         self.bogo_manager.database.newest_bogo = newest_bogo_mock
@@ -44,6 +47,9 @@ class TestBogoManager(unittest.TestCase):
                       newest_random_mock=strategies.async_mocks)
     def test_load_previous_state_bogo_but_no_random(
             self, init_args, bogo_row, newest_bogo_mock, newest_random_mock):
+        """
+        Loading the newest state containing a sorting state but no random module state is an error.
+        """
         self.bogo_manager = BogoManager(*init_args)
         newest_bogo_mock.mock.return_value = bogo_row
         self.bogo_manager.database.newest_bogo = newest_bogo_mock
@@ -61,6 +67,9 @@ class TestBogoManager(unittest.TestCase):
                       newest_random_mock=strategies.async_mocks)
     def test_load_previous_state_bogo_foreign_key_mismatch(
             self, init_args, bogo_row, random_row, newest_bogo_mock, newest_random_mock):
+        """
+        Loading the newest state containing a random module state with an mismatched reference id to the newest sorting state is an error.
+        """
         hypothesis.assume(bogo_row[0] != random_row[3])
         self.bogo_manager = BogoManager(*init_args)
         newest_bogo_mock.mock.return_value = bogo_row
@@ -79,6 +88,9 @@ class TestBogoManager(unittest.TestCase):
                       newest_random_mock=strategies.async_mocks)
     def test_load_previous_state_successful(
             self, init_args, bogo_row, random_row, newest_bogo_mock, newest_random_mock):
+        """
+        Loading the newest state from a correctly saved database initializes the BogoManager instance with the loaded state.
+        """
         hypothesis.assume(random_row[3] == bogo_row[0])
         random_module_state = ast.literal_eval(random_row[1])
         self.bogo_manager = BogoManager(*init_args)
